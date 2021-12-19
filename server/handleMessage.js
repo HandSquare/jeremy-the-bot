@@ -5,8 +5,11 @@ const sendScreenshot = require('./sendScreenshot')
 const { delay } = require('./util')
 const { web, rtm } = require('./slackClient')
 const { getEmojiList } = require('./emojiList')
-const { first } = require('lodash')
+const { first, random } = require('lodash')
 const cowsay = require('cowsay')
+const WordPOS = require('wordpos')
+const wordpos = new WordPOS();
+
 
 module.exports = async (event) => {
   const self = getSelf()
@@ -186,6 +189,7 @@ module.exports = async (event) => {
     // React to a message if it contains a word matching an emoji
     const emojiList = getEmojiList()
     const words = stopword.removeStopwords(event.text.toLowerCase().split(' '))
+
     await delay(1000)
     for (let word of words) {
       if (emojiList.includes(word)) {
@@ -197,6 +201,50 @@ module.exports = async (event) => {
         });
       }
     }
+
+
+    // Funny ussy
+    wordpos.getNouns(words.join(' '), async (nouns) => {
+      // remove numbers
+      let realWords = nouns.filter(noun => isNaN(Number(noun)))
+
+      // remove words that dont end in vowels
+      const vowels = 'aeiou'
+      realWords = realWords.filter(word => vowels.includes(word[word.length - 1]))
+
+      // remove words that are very short
+      realWords = realWords.filter(word => word.length > 4)
+      
+      // break early if no matches
+      if (realWords.length === 0) return;
+
+      const suffix = 'ussy'
+      // add suffix
+      const randomWord = realWords[Math.floor(Math.random() * realWords.length)]
+
+      // get first consonant from end
+      let consonantIndex = randomWord.length - 1
+      for (let i = randomWord.length - 1; i >= 0; i--) {
+        if (!vowels.includes(randomWord[i])) {
+          consonantIndex = i;
+          break;
+        }
+      }
+      const newWord = randomWord.slice(0, consonantIndex + 1) + suffix
+
+      // give it a low percentage of happening
+      const probability = 0.1;
+
+      console.log(`I want that ${newWord}`)
+
+      if (Math.random() < probability) {
+        await web.chat.postMessage({
+          text: `I want that ${newWord}`,
+          channel: event.channel,
+        }) 
+      }
+      
+    })
 
   } catch (error) {
     console.log('An error occurred', error);
