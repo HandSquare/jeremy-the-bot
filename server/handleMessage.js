@@ -213,7 +213,7 @@ module.exports = async (event) => {
       realWords = realWords.filter(word => vowels.includes(word[word.length - 1]))
 
       // remove words that are very short
-      realWords = realWords.filter(word => word.length > 4)
+      realWords = realWords.filter(word => word.length > 3)
       
       // break early if no matches
       if (realWords.length === 0) return;
