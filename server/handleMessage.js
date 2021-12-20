@@ -233,7 +233,7 @@ module.exports = async (event) => {
       const newWord = randomWord.slice(0, consonantIndex + 1) + suffix
 
       // give it a low percentage of happening
-      const probability = 0.1;
+      const probability = 0.05;
 
       console.log(`I want that ${newWord}`)
 
