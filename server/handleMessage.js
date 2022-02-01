@@ -49,6 +49,23 @@ module.exports = async (event) => {
       const query = event.text.match(/[W|w]hat means (.*)/)[1]
       await sendScreenshot(event, query)
     }
+    else if (event.text.match(/, pull up (.*) or (.*)/)) {
+      // React to the message
+      await web.reactions.add({
+        channel: event.channel,
+        timestamp: event.ts,
+        name: 'eyes'
+      });
+      await web.reactions.add({
+        channel: event.channel,
+        timestamp: event.ts,
+        name: 'game_die'
+      });
+      const match = Math.random() > 0.5 ? 1 : 2
+      const query = event.text.match(/, pull up (.*) or (.*)/)
+      const firstImageOnly = true
+      await sendScreenshot(event, query[match], firstImageOnly)
+    }
     else if (event.text.match(/, pull up (.*)/)) {
       // React to the message
       await web.reactions.add({
