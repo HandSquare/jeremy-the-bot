@@ -5,11 +5,7 @@ const sendScreenshot = require('./sendScreenshot')
 const { delay } = require('./util')
 const { web, rtm } = require('./slackClient')
 const { getEmojiList } = require('./emojiList')
-const { first, random } = require('lodash')
 const cowsay = require('cowsay')
-const WordPOS = require('wordpos')
-const wordpos = new WordPOS();
-
 
 module.exports = async (event) => {
   const self = getSelf()
@@ -185,7 +181,7 @@ module.exports = async (event) => {
       })
     }
 
-    if (event.text === 'respond_jerm' | 
+    if (event.text === 'respond_jerm' || 
         event.text === 'jeremy me boy') {
       let options = [
         'hey',
@@ -221,52 +217,48 @@ module.exports = async (event) => {
 
 
     // Funny ussy
-    wordpos.getNouns(words.join(' '), async (nouns) => {
-      // remove numbers
-      let realWords = nouns.filter(noun => isNaN(Number(noun)))
-
-      // remove words that dont end in vowels
-      const vowels = 'aeiou'
-      realWords = realWords.filter(word => vowels.includes(word[word.length - 1]))
-
-      // remove words that are very short
-      realWords = realWords.filter(word => word.length > 3)
+    const syllables = (_word) => {
+      let word = _word.toLowerCase();
+      const ret = word.replace(/(?:[^laeiouy]es|ed|lle|[^laeiouy]e)$/, '')
+                  .replace(/^y/, '')
+                  .match(/[aeiouy]{1,2}/g)
+      return ret || []
+    }
+ 
+    const getNewWord = (sentence) => {
+      const newWords = sentence.split(' ')
+      .filter(word => syllables(word).length > 1)
+        
+      if (!newWords.length) return undefined
+      const randomWord = newWords[Math.floor(Math.random() * newWords.length)]
       
-      // break early if no matches
-      if (realWords.length === 0) return;
+      const parts = syllables(randomWord);
+        
+      const partsStart = randomWord.lastIndexOf(parts[parts.length - 1])
+      console.log(partsStart)
+      return randomWord.slice(0, partsStart) + 'ussy'
+    }
 
-      const suffix = 'ussy'
-      // add suffix
-      const randomWord = realWords[Math.floor(Math.random() * realWords.length)]
+    const newWord = getNewWord(event.text)
 
-      // get first consonant from end
-      let consonantIndex = randomWord.length - 1
-      for (let i = randomWord.length - 1; i >= 0; i--) {
-        if (!vowels.includes(randomWord[i])) {
-          consonantIndex = i;
-          break;
-        }
-      }
-      const newWord = randomWord.slice(0, consonantIndex + 1) + suffix
 
-      // give it a low percentage of happening
-      const probability = 0.05;
+    // give it a low percentage of happening
+    const probability = 0.05;
 
-      console.log(`I want that ${newWord}`)
-      const templates = [
-        (word) => `I want that ${word}`,
-        (word) => `who need they ${word} ate?`,
-        (word) => `come get that ${word}`,
-      ]
+    console.log(`I want that ${newWord}`)
+    const templates = [
+      (word) => `I want that ${word}`,
+      (word) => `who need they ${word} ate?`,
+      (word) => `come get that ${word}`,
+    ]
 
-      if (Math.random() < probability) {
-        await web.chat.postMessage({
-          text: templates[Math.floor(Math.random() * templates.length)](newWord),
-          channel: event.channel
-        }) 
-      }
-      
-    })
+    if (Math.random() < probability) {
+      await web.chat.postMessage({
+        text: templates[Math.floor(Math.random() * templates.length)](newWord),
+        channel: event.channel
+      }) 
+    }
+
 
   } catch (error) {
     console.log('An error occurred', error);
