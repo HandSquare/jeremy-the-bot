@@ -250,14 +250,19 @@ module.exports = async (event) => {
       const newWord = randomWord.slice(0, consonantIndex + 1) + suffix
 
       // give it a low percentage of happening
-      const probability = 0.025;
+      const probability = 0.05;
 
       console.log(`I want that ${newWord}`)
+      const templates = [
+        (word) => `I want that ${word}`,
+        (word) => `who need they ${word} ate?`,
+        (word) => `come get that ${word}`,
+      ]
 
       if (Math.random() < probability) {
         await web.chat.postMessage({
-          text: `I want that ${newWord}`,
-          channel: event.channel,
+          text: templates[Math.floor(Math.random() * templates.length)](newWord),
+          channel: event.channel
         }) 
       }
       
