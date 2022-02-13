@@ -130,7 +130,7 @@ module.exports = async (event) => {
       await web.chat.postMessage({
         text: event.text,
         channel: event.channel,
-        as_user: false,
+        as_user: false
         // username: // getSelf().id ??
       })
     }
@@ -176,13 +176,13 @@ module.exports = async (event) => {
       await web.chat.postMessage({
         text: text,
         channel: event.channel,
-        as_user: false,
+        as_user: false
         // username: // how can we determine jeremy's username, rather than his bot name?
       })
     }
 
-    if (event.text === 'respond_jerm' || 
-        event.text === 'jeremy me boy') {
+    if (event.text === 'respond_jerm' 
+        || event.text === 'jeremy me boy') {
       let options = [
         'hey',
         'hello',
@@ -194,7 +194,7 @@ module.exports = async (event) => {
       await web.chat.postMessage({
         text: text,
         channel: event.channel,
-        as_user: false,
+        as_user: false
         // username: getSelf().id doesn't work? or does it?
       })
     }
@@ -219,15 +219,18 @@ module.exports = async (event) => {
     // Funny ussy
     const syllables = (_word) => {
       let word = _word.toLowerCase();
-      const ret = word.replace(/(?:[^laeiouy]es|ed|lle|[^laeiouy]e)$/, '')
-                  .replace(/^y/, '')
-                  .match(/[aeiouy]{1,2}/g)
+      const ret = word.replace(/(?:[^laeiouy]es|ed|lle|[^laeiouy]e)$/, '').
+                  replace(/^y/, '').
+                  match(/[aeiouy]{1,2}/g)
       return ret || []
     }
  
     const getNewWord = (sentence) => {
-      const newWords = sentence.split(' ')
-      .filter(word => syllables(word).length > 1)
+      const newWords = sentence.split(' ').
+      // test that it only contains letters
+      filter(word => (/^[a-zA-Z]+$/).test(word)).
+      // test that it's more than one syllable
+      filter(word => syllables(word).length > 1)
         
       if (!newWords.length) return undefined
       const randomWord = newWords[Math.floor(Math.random() * newWords.length)]
@@ -248,7 +251,7 @@ module.exports = async (event) => {
     const templates = [
       (word) => `I want that ${word}`,
       (word) => `who need they ${word} ate?`,
-      (word) => `come get that ${word}`,
+      (word) => `come get that ${word}`
     ]
 
     if (Math.random() < probability && newWord !== undefined) {
