@@ -201,10 +201,10 @@ module.exports = async (event) => {
 
     // React to a message if it contains a word matching an emoji
     const emojiList = getEmojiList()
-    const words = stopword.removeStopwords(event.text.toLowerCase().split(' '))
+    const wordsWithoutStopwords = stopword.removeStopwords(event.text.toLowerCase().split(' '))
 
     await delay(1000)
-    for (let word of words) {
+    for (let word of wordsWithoutStopwords) {
       if (emojiList.includes(word)) {
         await delay(300)
         await web.reactions.add({
@@ -225,8 +225,8 @@ module.exports = async (event) => {
       return ret || []
     }
  
-    const getNewWord = (sentence) => {
-      const newWords = sentence.split(' ').
+    const getNewWord = (wordList) => {
+      const newWords = wordList.
       // test that it only contains letters
       filter(word => (/^[a-zA-Z]+$/).test(word)).
       // test that it's more than one syllable
@@ -242,7 +242,7 @@ module.exports = async (event) => {
       return randomWord.slice(0, partsStart) + 'ussy'
     }
 
-    const newWord = getNewWord(event.text)
+    const newWord = getNewWord(wordsWithoutStopwords)
 
     // give it a low percentage of happening
     const probability = 0.05;
