@@ -238,7 +238,7 @@ module.exports = async (event) => {
     const newWord = getNewWord(wordsWithoutStopwords);
 
     // give it a low percentage of happening
-    const probability = 0.05;
+    const probability = 0.03;
 
     console.log(`I want that ${newWord}`);
     const templates = [
