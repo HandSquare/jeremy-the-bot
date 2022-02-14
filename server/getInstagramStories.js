@@ -1,11 +1,11 @@
-const puppeteer = require("puppeteer");
-const { web } = require("./slackClient");
-const { delay } = require("./util");
+const puppeteer = require('puppeteer');
+const { web } = require('./slackClient');
+const { delay } = require('./util');
 
 const getStoriesOfUser = async (event, user) => {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   const page = await browser.newPage();
   page.setViewport({
@@ -16,7 +16,7 @@ const getStoriesOfUser = async (event, user) => {
 
   await delay(2000);
   const elems = await page.evaluate(() => {
-    const divs = document.getElementsByTagName("div");
+    const divs = document.getElementsByTagName('div');
     const array = [...divs].map((item) => ({
       html: item.innerHTML,
       text: item.innerText,
@@ -27,7 +27,7 @@ const getStoriesOfUser = async (event, user) => {
   });
 
   console.log(elems);
-  const tapToPlayElement = divs.find((item) => item.html === "Tap to play");
+  const tapToPlayElement = divs.find((item) => item.html === 'Tap to play');
   console.log(tapToPlayElement);
   // await page.click(`div.[${tapToPlayClass}]`)
 
@@ -38,11 +38,11 @@ const getStoriesOfUser = async (event, user) => {
   await web.files.upload({
     channels: event.channel,
     file: data,
-    filetype: "auto",
+    filetype: 'auto',
     filename: query,
   });
 };
 
-getStoriesOfUser(undefined, "nicholas.irl");
+getStoriesOfUser(undefined, 'nicholas.irl');
 
 module.exports = getStoriesOfUser;

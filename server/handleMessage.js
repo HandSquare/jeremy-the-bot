@@ -1,11 +1,11 @@
-const stopword = require("stopword");
-const { getSelf } = require("./self");
-const messageHistory = require("./messageHistory");
-const sendScreenshot = require("./sendScreenshot");
-const { delay } = require("./util");
-const { web, rtm } = require("./slackClient");
-const { getEmojiList } = require("./emojiList");
-const cowsay = require("cowsay");
+const stopword = require('stopword');
+const { getSelf } = require('./self');
+const messageHistory = require('./messageHistory');
+const sendScreenshot = require('./sendScreenshot');
+const { delay } = require('./util');
+const { web, rtm } = require('./slackClient');
+const { getEmojiList } = require('./emojiList');
+const cowsay = require('cowsay');
 
 module.exports = async (event) => {
   const self = getSelf();
@@ -20,7 +20,7 @@ module.exports = async (event) => {
   // Add message to queue
   messageHistory[event.channel].unshift(event);
 
-  console.log("messageHistory: ", messageHistory);
+  console.log('messageHistory: ', messageHistory);
 
   try {
     /*
@@ -39,7 +39,7 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "eyes",
+        name: 'eyes',
       });
       const query = event.text.match(/[W|w]hat means (.*)/)[1];
       await sendScreenshot(event, query);
@@ -48,12 +48,12 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "eyes",
+        name: 'eyes',
       });
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "game_die",
+        name: 'game_die',
       });
       const match = Math.random() > 0.5 ? 1 : 2;
       const query = event.text.match(/, pull up (.*) or (.*)/);
@@ -64,12 +64,12 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "eyes",
+        name: 'eyes',
       });
       const query = event.text.match(/, pull up (.*)/)[1];
       const firstImageOnly = true;
       await sendScreenshot(event, query, firstImageOnly);
-    } else if (event.text.toLowerCase().includes(", pull that up")) {
+    } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
       if (!lastMessage) return;
@@ -78,11 +78,11 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "eyes",
+        name: 'eyes',
       });
       const query = stopword
-        .removeStopwords(lastMessage.text.split(" "))
-        .join(" ");
+        .removeStopwords(lastMessage.text.split(' '))
+        .join(' ');
       const firstImageOnly = true;
       await sendScreenshot(event, query, firstImageOnly);
     } else if (
@@ -97,12 +97,12 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "eyes",
+        name: 'eyes',
         thread_ts: event.ts,
       });
       const query = stopword
-        .removeStopwords(lastMessage.text.split(" "))
-        .join(" ");
+        .removeStopwords(lastMessage.text.split(' '))
+        .join(' ');
       await sendScreenshot(event, query);
     } else if (event.text.match(/[E|e]nhance/)) {
       // React to the message
@@ -113,7 +113,7 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "eyes",
+        name: 'eyes',
       });
       const query = lastFile.files.pop().name;
       const firstImageOnly = true;
@@ -122,8 +122,8 @@ module.exports = async (event) => {
       // last message exists
       messageHistory[event.channel][1] &&
       // double check last and this message are not from jeremy
-      messageHistory[event.channel][1].subtype !== "bot_message" &&
-      event.subtype !== "bot_message" &&
+      messageHistory[event.channel][1].subtype !== 'bot_message' &&
+      event.subtype !== 'bot_message' &&
       // this message is a subsection of the last message
       messageHistory[event.channel][1].text.includes(event.text)
     ) {
@@ -137,10 +137,10 @@ module.exports = async (event) => {
       const query = event.text.match(/, cowsay (.*)/)[1];
       await web.chat.postMessage({
         /* eslint-disable-next-line no-useless-concat */
-        text: "```" + "\n" + cowsay.say({ text: query }) + "\n" + "```",
+        text: '```' + '\n' + cowsay.say({ text: query }) + '\n' + '```',
         channel: event.channel,
         as_user: true,
-        username: "cow",
+        username: 'cow',
       });
     }
 
@@ -149,7 +149,7 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: "wave",
+        name: 'wave',
       });
     }
 
@@ -162,11 +162,11 @@ module.exports = async (event) => {
         messageHistory[event.channel][1].user === self.id)
     ) {
       let options = [
-        "no worries",
-        "any time",
+        'no worries',
+        'any time',
         "you're welcome!",
-        "sure thing my dude",
-        "yeah!",
+        'sure thing my dude',
+        'yeah!',
       ];
       let text = options[Math.floor(Math.random() * options.length)];
       await delay(1000);
@@ -178,8 +178,8 @@ module.exports = async (event) => {
       });
     }
 
-    if (event.text === "respond_jerm" || event.text === "jeremy me boy") {
-      let options = ["hey", "hello", "hi there!", "hey daddy"];
+    if (event.text === 'respond_jerm' || event.text === 'jeremy me boy') {
+      let options = ['hey', 'hello', 'hi there!', 'hey daddy'];
       let text = options[Math.floor(Math.random() * options.length)];
       await delay(1000);
       await web.chat.postMessage({
@@ -193,7 +193,7 @@ module.exports = async (event) => {
     // React to a message if it contains a word matching an emoji
     const emojiList = getEmojiList();
     const wordsWithoutStopwords = stopword.removeStopwords(
-      event.text.toLowerCase().split(" ")
+      event.text.toLowerCase().split(' ')
     );
 
     await delay(1000);
@@ -212,8 +212,8 @@ module.exports = async (event) => {
     const syllables = (_word) => {
       let word = _word.toLowerCase();
       const ret = word
-        .replace(/(?:[^laeiouy]es|ed|lle|[^laeiouy]e)$/, "")
-        .replace(/^y/, "")
+        .replace(/(?:[^laeiouy]es|ed|lle|[^laeiouy]e)$/, '')
+        .replace(/^y/, '')
         .match(/[aeiouy]{1,2}/g);
       return ret || [];
     };
@@ -232,7 +232,7 @@ module.exports = async (event) => {
 
       const partsStart = randomWord.lastIndexOf(parts[parts.length - 1]);
       console.log(partsStart);
-      return randomWord.slice(0, partsStart) + "ussy";
+      return randomWord.slice(0, partsStart) + 'ussy';
     };
 
     const newWord = getNewWord(wordsWithoutStopwords);
@@ -254,6 +254,6 @@ module.exports = async (event) => {
       });
     }
   } catch (error) {
-    console.log("An error occurred", error);
+    console.log('An error occurred', error);
   }
 };

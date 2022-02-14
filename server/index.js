@@ -1,14 +1,14 @@
-const { web, rtm } = require("./slackClient");
-const handleMessage = require("./handleMessage");
-const { gatherEmoji } = require("./emojiList");
-const handleReaction = require("./handleReaction");
-const app = require("express")();
-const { getSelf, setSelf } = require("./self");
-const path = require("path");
+const { web, rtm } = require('./slackClient');
+const handleMessage = require('./handleMessage');
+const { gatherEmoji } = require('./emojiList');
+const handleReaction = require('./handleReaction');
+const app = require('express')();
+const { getSelf, setSelf } = require('./self');
+const path = require('path');
 
-rtm.on("reaction_added", handleReaction);
+rtm.on('reaction_added', handleReaction);
 
-rtm.on("message", handleMessage);
+rtm.on('message', handleMessage);
 
 // Set up a webserver
 app.listen(process.env.PORT || 3000);
@@ -22,40 +22,40 @@ const boot = async () => {
 // Boot immediately
 boot();
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.get("/status", (req, res) => {
-  console.log("got status ping");
+app.get('/status', (req, res) => {
+  console.log('got status ping');
   console.log(rtm.connected);
   if (rtm.connected) {
-    console.log("send online");
+    console.log('send online');
     res.send({
-      status: "ONLINE",
+      status: 'ONLINE',
     });
   } else {
-    console.log("send offline");
+    console.log('send offline');
     res.send({
-      status: "OFFLINE",
+      status: 'OFFLINE',
     });
   }
 });
 
-app.get("/status.png", (req, res) => {
+app.get('/status.png', (req, res) => {
   if (rtm.connected) {
-    res.sendFile(path.join(__dirname, "../public/online.png"));
+    res.sendFile(path.join(__dirname, '../public/online.png'));
   } else {
-    res.sendFile(path.join(__dirname, "../public/offline.png"));
+    res.sendFile(path.join(__dirname, '../public/offline.png'));
   }
 });
 
-app.post("/start", async (req, res) => {
+app.post('/start', async (req, res) => {
   await boot();
   res.sendStatus(200);
 });
 
-app.post("/stop", async (req, res) => {
+app.post('/stop', async (req, res) => {
   await rtm.disconnect();
   setSelf(undefined);
   res.sendStatus(200);

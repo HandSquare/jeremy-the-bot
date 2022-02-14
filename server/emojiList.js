@@ -1,24 +1,24 @@
-const puppeteer = require("puppeteer");
-const { web } = require("./slackClient");
+const puppeteer = require('puppeteer');
+const { web } = require('./slackClient');
 let config;
 try {
-  config = require("../config.json");
+  config = require('../config.json');
 } catch (e) {
-  console.log("no config. this is expected if running from heroku");
+  console.log('no config. this is expected if running from heroku');
 }
 let emojiList = [];
 
 const getDefaultEmoji = async () => {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   const page = await browser.newPage();
-  await page.goto("https://www.webfx.com/tools/emoji-cheat-sheet/");
+  await page.goto('https://www.webfx.com/tools/emoji-cheat-sheet/');
 
   // eslint-disable-next-line no-undef
   const defaultEmoji = await page.evaluate(() =>
-    [...document.getElementsByClassName("name")].map((elem) => elem.innerHTML)
+    [...document.getElementsByClassName('name')].map((elem) => elem.innerHTML)
   );
   browser.close();
 
