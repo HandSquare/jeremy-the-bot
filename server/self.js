@@ -1,14 +1,14 @@
-let self = undefined
+let self = undefined;
 
-function getSelf (){ 
-  return self
+function getSelf() {
+  return self;
 }
 
-function setSelf (data){
-  self = { ...data } 
+function setSelf(data) {
+  self = { ...data };
 }
 
 module.exports = {
   getSelf,
-  setSelf
-}
+  setSelf,
+};

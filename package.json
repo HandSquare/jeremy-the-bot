@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server/index.js",
-    "dev": "nodemon server/index.js"
+    "dev": "nodemon server/index.js",
+    "prepare": "husky install"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +24,12 @@
     "wordpos": "^2.1.0"
   },
   "devDependencies": {
-    "eslint": "^6.0.1",
-    "nodemon": "^2.0.6"
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.4",
+    "nodemon": "^2.0.6",
+    "prettier": "^2.5.1"
+  },
+  "lint-staged": {
+    "*.{js,css,md}": "prettier --write"
   }
 }

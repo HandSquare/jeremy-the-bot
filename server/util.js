@@ -1,5 +1,5 @@
-const delay = (time) => new Promise((resolve) => setTimeout(resolve, time))
+const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 
 module.exports = {
-  delay
-}  
+  delay,
+};
