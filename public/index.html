@@ -1,77 +1,70 @@
 <html>
-  
   <body>
     <img src="/status.png" id="status" />
     <div>
-      <button id="toggle">
-        Start
-      </button>
+      <button id="toggle">Start</button>
       <span id="info"></span>
     </div>
 
     <script>
-      const toggle = document.getElementById('toggle')
-      const info = document.getElementById('info')
-      const status = document.getElementById('status')
-      let isActive = false
+      const toggle = document.getElementById('toggle');
+      const info = document.getElementById('info');
+      const status = document.getElementById('status');
+      let isActive = false;
 
       const resetImage = () => {
-        status.src = ''
-        status.src = `/status.png?${performance.now()}`
-      }
+        status.src = '';
+        status.src = `/status.png?${performance.now()}`;
+      };
 
       const handleOnline = () => {
-        isActive = true
-        toggle.innerHTML = 'GO OFFLINE'
-        resetImage()
-      }
+        isActive = true;
+        toggle.innerHTML = 'GO OFFLINE';
+        resetImage();
+      };
 
       const handleOffline = () => {
-        isActive = false
-        toggle.innerHTML = 'GO ONLINE'
-        resetImage()
-      }
+        isActive = false;
+        toggle.innerHTML = 'GO ONLINE';
+        resetImage();
+      };
 
       const check = () => {
         fetch('/status')
-        .then(res => {
-          return res.json()
-        })
-        .then(({status}) => {
-          if (status === 'ONLINE') {
-            handleOnline()
-          } else {
-            handleOffline()
-          }
-        })
-        .catch(err => {
-          handleOffline()
-        })
-        .then( () => {
-          setTimeout(check, 20000)
-        })
-      }
-      check()
-      
+          .then((res) => {
+            return res.json();
+          })
+          .then(({ status }) => {
+            if (status === 'ONLINE') {
+              handleOnline();
+            } else {
+              handleOffline();
+            }
+          })
+          .catch((err) => {
+            handleOffline();
+          })
+          .then(() => {
+            setTimeout(check, 20000);
+          });
+      };
+      check();
+
       toggle.addEventListener('click', () => {
         if (!isActive) {
           fetch('/start', {
-            method: 'POST'
-          })
-          .then(res => {
-            handleOnline()
-          })
+            method: 'POST',
+          }).then((res) => {
+            handleOnline();
+          });
         } else {
           fetch('/stop', {
-            method: 'POST'
-          })
-          .then(res => {
-            handleOffline()
-          })
-          
+            method: 'POST',
+          }).then((res) => {
+            handleOffline();
+          });
         }
-      })
-      
+      });
     </script>
   </body>
 </html>
