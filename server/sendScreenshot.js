@@ -59,14 +59,14 @@ const sendScreenshot = async (event, query, firstImageOnly) => {
   let data;
 
   if (firstImageOnly) {
+    // Click the first link to open the side panel
     await page.click('div.islrc > div > a');
     // Get image directly from url
     const firstImageUrl = await page.evaluate(() =>
       decodeURIComponent(
         document
-          .getElementsByClassName('islrc')[0]
-          .firstChild.firstChild.href.match(/imgurl=(.*?)&/)
-          .pop()
+          .getElementById('Sva75c') // the black sidebar
+          .querySelector('img').src // the first img
       )
     );
     data = await getCroppedScreenshot(page, firstImageUrl);

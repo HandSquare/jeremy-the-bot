@@ -80,9 +80,7 @@ module.exports = async (event) => {
         timestamp: event.ts,
         name: 'eyes',
       });
-      const query = stopword
-        .removeStopwords(lastMessage.text.split(' '))
-        .join(' ');
+      const query = lastMessage.text;
       const firstImageOnly = true;
       await sendScreenshot(event, query, firstImageOnly);
     } else if (
