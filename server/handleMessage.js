@@ -250,7 +250,7 @@ module.exports = async (event) => {
         text: templates[Math.floor(Math.random() * templates.length)](newWord),
         channel: event.channel,
       });
-      await sendScreenshot(event, newWord)
+      await sendScreenshot(event, newWord, true)
     }
   } catch (error) {
     console.log('An error occurred', error);
