@@ -1,11 +1,12 @@
 const stopword = require('stopword');
 const { getSelf } = require('./self');
 const messageHistory = require('./messageHistory');
-const sendScreenshot = require('./sendScreenshot');
+const sendImagesScreenshot = require('./sendImagesScreenshot');
 const { delay } = require('./util');
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
 const cowsay = require('cowsay');
+const sendSearchScreenshot = require('./sendSearchScreenshot');
 
 module.exports = async (event) => {
   const self = getSelf();
@@ -42,7 +43,7 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = event.text.match(/[W|w]hat means (.*)/)[1];
-      await sendScreenshot(event, query);
+      await sendImagesScreenshot(event, query);
     } else if (event.text.match(/, pull up (.*) or (.*)/)) {
       // React to the message
       await web.reactions.add({
@@ -58,7 +59,7 @@ module.exports = async (event) => {
       const match = Math.random() > 0.5 ? 1 : 2;
       const query = event.text.match(/, pull up (.*) or (.*)/);
       const firstImageOnly = true;
-      await sendScreenshot(event, query[match], firstImageOnly);
+      await sendImagesScreenshot(event, query[match], firstImageOnly);
     } else if (event.text.match(/, pull up (.*)/)) {
       // React to the message
       await web.reactions.add({
@@ -68,7 +69,7 @@ module.exports = async (event) => {
       });
       const query = event.text.match(/, pull up (.*)/)[1];
       const firstImageOnly = true;
-      await sendScreenshot(event, query, firstImageOnly);
+      await sendImagesScreenshot(event, query, firstImageOnly);
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
@@ -82,7 +83,7 @@ module.exports = async (event) => {
       });
       const query = lastMessage.text;
       const firstImageOnly = true;
-      await sendScreenshot(event, query, firstImageOnly);
+      await sendImagesScreenshot(event, query, firstImageOnly);
     } else if (
       event.text.match(/[W|w]hat[\'|\’]?s that/) &&
       event.text.match(/[W|w]hat[\'|\’]?s that/).length
@@ -101,7 +102,16 @@ module.exports = async (event) => {
       const query = stopword
         .removeStopwords(lastMessage.text.split(' '))
         .join(' ');
-      await sendScreenshot(event, query);
+      await sendImagesScreenshot(event, query);
+    } else if (event.text.match(/, look up (.*)/)) {
+      // React to the message
+      await web.reactions.add({
+        channel: event.channel,
+        timestamp: event.ts,
+        name: 'mag_right',
+      });
+      const query = event.text.match(/, look up (.*)/)[1];
+      await sendSearchScreenshot(event, query);
     } else if (event.text.match(/[E|e]nhance/)) {
       // React to the message
       const lastFile = messageHistory[event.channel].find(
@@ -115,7 +125,7 @@ module.exports = async (event) => {
       });
       const query = lastFile.files.pop().name;
       const firstImageOnly = true;
-      await sendScreenshot(event, query, firstImageOnly);
+      await sendImagesScreenshot(event, query, firstImageOnly);
     } else if (
       // last message exists
       messageHistory[event.channel][1] &&
@@ -250,7 +260,7 @@ module.exports = async (event) => {
         text: templates[Math.floor(Math.random() * templates.length)](newWord),
         channel: event.channel,
       });
-      await sendScreenshot(event, newWord, true)
+      await sendImagesScreenshot(event, newWord, true)
     }
   } catch (error) {
     console.log('An error occurred', error);

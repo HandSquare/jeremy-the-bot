@@ -40,7 +40,7 @@ const getCroppedScreenshot = async (page, firstImageUrl) => {
   return page.screenshot();
 };
 
-const sendScreenshot = async (event, query, firstImageOnly) => {
+const sendImagesScreenshot = async (event, query, firstImageOnly) => {
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -85,4 +85,4 @@ const sendScreenshot = async (event, query, firstImageOnly) => {
   });
 };
 
-module.exports = sendScreenshot;
+module.exports = sendImagesScreenshot;
