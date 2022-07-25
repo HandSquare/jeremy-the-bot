@@ -35,6 +35,7 @@ module.exports = async (event) => {
      * }
      * Look something up
      */
+    if (!event.text) return;
     if (event.text.match(/[W|w]hat means (.*)/)) {
       // React to the message
       await web.reactions.add({

@@ -109,17 +109,16 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
     }
   } else {
     data = await page.screenshot();
+    web.files.upload({
+      channels: event.channel,
+      file: data,
+      filetype: 'auto',
+      text: query,
+      filename: query,
+    });
   }
 
-  await browser.close();
-
-  await web.files.upload({
-    channels: event.channel,
-    file: data,
-    filetype: 'auto',
-    text: query,
-    filename: query,
-  });
+  browser.close();
 };
 
 module.exports = sendImagesScreenshot;
