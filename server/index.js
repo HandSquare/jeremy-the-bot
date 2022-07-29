@@ -5,6 +5,7 @@ const handleReaction = require('./handleReaction');
 const app = require('express')();
 const { getSelf, setSelf } = require('./self');
 const path = require('path');
+const { startStore } = require('./db');
 
 rtm.on('reaction_added', handleReaction);
 
@@ -21,6 +22,9 @@ const boot = async () => {
 
 // Boot immediately
 boot();
+
+// Start firebase
+startStore();
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));

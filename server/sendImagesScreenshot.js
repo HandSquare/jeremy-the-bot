@@ -3,7 +3,8 @@ const { web } = require('./slackClient');
 
 const https = require('https');
 const http = require('http');
-const { type } = require('os');
+const { getStateValue } = require('./db');
+const { delay, getCurrentAtWork } = require('./util');
 
 const getBufferFromRequest = (url) =>
   new Promise((resolve, reject) => {
@@ -60,12 +61,32 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
     )}${IMAGE_SEARCH}${LARGE_IMAGES_ONLY}`
   );
 
+  // read db to see who is at work
+  const atWork = (await getCurrentAtWork()) > 0;
+
   // either a page screenshot or an img
   let data;
+  if (atWork) {
+    await page.evaluate(() => {
+      // a selector to a safesearch button within the gear icon. may jeremy forgive us if this changes
+      const button = document.querySelector(
+        'div[jsaction="dXIA6:rY0YYb"] input'
+      );
+      button.click();
+    });
+    await page.waitForNavigation();
+  }
 
   if (firstImageOnly) {
     // Click the first link to open the side panel
-    await page.click('div.islrc > div > a');
+    try {
+      await page.click('div.islrc > div > a');
+    } catch (e) {
+      web.chat.postMessage({
+        channel: event.channel,
+        text: 'Nothing was found. (SafeSearch is on)',
+      });
+    }
     // Get image directly from url
     const firstImageUrl = await page.evaluate(async () => {
       const img = document
