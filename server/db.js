@@ -1,6 +1,11 @@
 const admin = require('firebase-admin');
 const { getFirestore, db } = require('firebase-admin/firestore');
-const serviceAccount = require('../jeremy-db-firebase-adminsdk-mrm2y-1a4ec8168b.json');
+let serviceAccount;
+try {
+  serviceAccount = require('../jeremy-db-firebase-adminsdk-mrm2y-1a4ec8168b.json');
+} catch (e) {
+  console.log('no firebase config. this is expected if running from heroku');
+}
 
 let store;
 
