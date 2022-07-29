@@ -2,11 +2,12 @@ const stopword = require('stopword');
 const { getSelf } = require('./self');
 const messageHistory = require('./messageHistory');
 const sendImagesScreenshot = require('./sendImagesScreenshot');
-const { delay } = require('./util');
+const { delay, getCurrentAtWork } = require('./util');
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
 const cowsay = require('cowsay');
 const sendSearchScreenshot = require('./sendSearchScreenshot');
+const { updateState, getState, getStateValue } = require('./db');
 
 module.exports = async (event) => {
   const self = getSelf();
@@ -215,6 +216,40 @@ module.exports = async (event) => {
           name: word,
         });
       }
+    }
+
+    if (event.text === 'I am at work!') {
+      const currentWork = await getStateValue('at_work');
+      await updateState({ at_work: { ...currentWork, [event.user]: true } });
+      const newCurrentWork = await getCurrentAtWork();
+      let message =
+        newCurrentWork > 1
+          ? `Okay. there are now *${newCurrentWork} people* at work. Safesearch is on.`
+          : 'Okay. You are the only person at work. SafeSearch is on.';
+      web.chat.postMessage({
+        text: message,
+        channel: event.channel,
+        as_user: false,
+      });
+    }
+
+    if (event.text === 'I am no longer at work!') {
+      const currentWork = await getStateValue('at_work');
+      await updateState({ at_work: { ...currentWork, [event.user]: false } });
+      const newCurrentWork = await getCurrentAtWork();
+      let message;
+      if (newCurrentWork > 1) {
+        message = `Okay. There are still *${newCurrentWork} people* at work. SafeSearch is on.`;
+      } else if (newCurrentWork === 1) {
+        message = `Okay. There is still *${newCurrentWork} person* at work. SafeSearch is on.`;
+      } else if (newCurrentWork === 0) {
+        message = `Okay. No one is currently at work. Turning SafeSearch off.`;
+      }
+      web.chat.postMessage({
+        text: message,
+        channel: event.channel,
+        as_user: false,
+      });
     }
 
     // Funny ussy
