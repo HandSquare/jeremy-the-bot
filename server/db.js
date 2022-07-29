@@ -1,16 +1,22 @@
 const admin = require('firebase-admin');
 const { getFirestore, db } = require('firebase-admin/firestore');
-let serviceAccount;
-try {
-  serviceAccount = require('../jeremy-db-firebase-adminsdk-mrm2y-1a4ec8168b.json');
-} catch (e) {
-  console.log('no firebase config. this is expected if running from heroku');
-}
 
 let store;
 
 async function startStore() {
-  const creds = process.env.FIREBASE_CONFIG || serviceAccount;
+  const creds = {
+    ['type']: process.env['TYPE'],
+    ['project_id']: process.env['PROJECT_ID'],
+    ['private_key_id']: process.env['PRIVATE_KEY_ID'],
+    ['private_key']: process.env['PRIVATE_KEY'],
+    ['client_email']: process.env['CLIENT_EMAIL'],
+    ['client_id']: process.env['CLIENT_ID'],
+    ['auth_uri']: process.env['AUTH_URI'],
+    ['token_uri']: process.env['TOKEN_URI'],
+    ['auth_provider_x509_cert_url']: process.env['AUTH_PROVIDER_X509_CERT_URL'],
+    ['client_x509_cert_url']: process.env['CLIENT_X509_CERT_URL'],
+  };
+
   const app = admin.initializeApp({
     credential: admin.credential.cert(creds),
   });

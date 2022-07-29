@@ -1,5 +1,5 @@
 node_modules
-config.json
 verify.sh
 .DS_Store
 jeremy-db-firebase-adminsdk-mrm2y-1a4ec8168b.json
+.env

@@ -1,10 +1,13 @@
+const app = require('express')();
+const path = require('path');
+
+require('dotenv').config();
+
 const { web, rtm } = require('./slackClient');
 const handleMessage = require('./handleMessage');
 const { gatherEmoji } = require('./emojiList');
 const handleReaction = require('./handleReaction');
-const app = require('express')();
 const { getSelf, setSelf } = require('./self');
-const path = require('path');
 const { startStore } = require('./db');
 
 rtm.on('reaction_added', handleReaction);
@@ -12,7 +15,7 @@ rtm.on('reaction_added', handleReaction);
 rtm.on('message', handleMessage);
 
 // Set up a webserver
-app.listen(process.env.PORT || 3000);
+app.listen(process.env.PORT);
 
 const boot = async () => {
   const { self, team } = await rtm.start();
