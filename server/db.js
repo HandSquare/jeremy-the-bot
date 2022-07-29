@@ -17,8 +17,6 @@ async function startStore() {
     ['client_x509_cert_url']: process.env['CLIENT_X509_CERT_URL'],
   };
 
-  console.log(creds.private_key);
-
   const app = admin.initializeApp({
     credential: admin.credential.cert(creds),
   });
