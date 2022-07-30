@@ -15,7 +15,7 @@ const startTimer = () => {
   setInterval(() => {
     time = getHoursMinutesDate();
 
-    if (events[time].length > 0) {
+    if (events[time] && events[time].length > 0) {
       events[time].forEach((evt) => {
         if (typeof evt === 'function') evt();
       });
