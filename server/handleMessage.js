@@ -299,13 +299,16 @@ module.exports = async (event) => {
     const newWord = getNewWord(wordsWithoutStopwords);
 
     // give it a low percentage of happening
-    const probability = 0.002;
+    const probability = 0.003;
 
-    console.log(`I want that ${newWord}`);
+    const names = ['jon', 'gio', 'rajan', 'nick', 'cleb', 'brian'];
+    const name = names[Math.floor(Math.random() * names.length)];
     const templates = [
-      (word) => `I want that ${word}`,
-      (word) => `who need they ${word} ate?`,
-      (word) => `come get that ${word}`,
+      (word) => `i heard ${name} loves a tight ${word}`,
+      (word) => `i would love to suck ${name}s ${word}`,
+      (word) => `${name} can eat my ${word} any day`,
+      (word) => `wow, ${name} can sure work a ${word}`,
+      (word) => `${name} and ${word} are a match made in heaven`,
     ];
 
     if (Math.random() < probability && newWord !== undefined) {
