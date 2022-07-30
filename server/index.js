@@ -9,6 +9,7 @@ const { gatherEmoji } = require('./emojiList');
 const handleReaction = require('./handleReaction');
 const { getSelf, setSelf } = require('./self');
 const { startStore } = require('./db');
+const { startTimer } = require('./timer');
 
 rtm.on('reaction_added', handleReaction);
 
@@ -28,6 +29,9 @@ boot();
 
 // Start firebase
 startStore();
+
+// Start our clock event listener
+startTimer();
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));

@@ -8,6 +8,21 @@ const { getEmojiList } = require('./emojiList');
 const cowsay = require('cowsay');
 const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
+const { at } = require('lodash');
+
+let lastEvent;
+
+at('18:30', async () => {
+  const atWork = await getCurrentAtWork();
+  if (atWork > 0) {
+    await updateState({ at_work: {} });
+    if (lastEvent)
+      web.chat.postMessage({
+        text: 'It is now 6:30 PM, turning off SafeSearch',
+        channel: lastEvent.channel,
+      });
+  }
+});
 
 module.exports = async (event) => {
   const self = getSelf();
@@ -18,6 +33,8 @@ module.exports = async (event) => {
   if (messageHistory[event.channel].length > 5) {
     messageHistory[event.channel].pop();
   }
+
+  lastEvent = event;
 
   // Add message to queue
   messageHistory[event.channel].unshift(event);
