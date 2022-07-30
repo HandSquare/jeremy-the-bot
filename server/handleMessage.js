@@ -236,6 +236,7 @@ module.exports = async (event) => {
     }
 
     if (event.text === 'I am at work!') {
+      if (!event.user) return;
       await updateState({ [`at_work.${event.user}`]: true });
       const newCurrentWork = await getCurrentAtWork();
       let message =
@@ -250,6 +251,7 @@ module.exports = async (event) => {
     }
 
     if (event.text === 'I am no longer at work!') {
+      if (!event.user) return;
       await updateState({ [`at_work.${event.user}`]: false });
       const newCurrentWork = await getCurrentAtWork();
       let message;
