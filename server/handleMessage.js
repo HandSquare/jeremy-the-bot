@@ -8,7 +8,7 @@ const { getEmojiList } = require('./emojiList');
 const cowsay = require('cowsay');
 const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
-const { at } = require('lodash');
+const { at } = require('./timer');
 
 let lastEvent;
 
