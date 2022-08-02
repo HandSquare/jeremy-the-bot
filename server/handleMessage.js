@@ -9,6 +9,7 @@ const cowsay = require('cowsay');
 const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
+const getTikTokThumb = require('./getTikTokThumb');
 
 let lastEvent;
 
@@ -164,6 +165,7 @@ module.exports = async (event) => {
       messageHistory[event.channel][1].subtype !== 'bot_message' &&
       event.subtype !== 'bot_message' &&
       // this message is a subsection of the last message
+      messageHistory[event.channel][1].text &&
       messageHistory[event.channel][1].text.includes(event.text)
     ) {
       await web.chat.postMessage({
@@ -279,6 +281,15 @@ module.exports = async (event) => {
         channel: event.channel,
         as_user: false,
       });
+    }
+
+    if (event.text.startsWith('<https://www.tiktok.com/')) {
+      await web.reactions.add({
+        channel: event.channel,
+        timestamp: event.ts,
+        name: 'eyes',
+      });
+      getTikTokThumb(event);
     }
 
     // Funny ussy
