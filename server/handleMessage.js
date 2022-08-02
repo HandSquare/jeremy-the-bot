@@ -8,7 +8,7 @@ const { getEmojiList } = require('./emojiList');
 const cowsay = require('cowsay');
 const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
-const { at } = require('./timer');
+const { at, getSecondsToSlackTimestamp } = require('./timer');
 
 let lastEvent;
 
@@ -21,6 +21,18 @@ at('18:30', async () => {
         text: 'It is now 6:30 PM, turning off SafeSearch',
         channel: lastEvent.channel,
       });
+  }
+});
+
+at('16:20', async () => {
+  if (lastEvent) {
+    const time = lastEvent.ts;
+    if (getSecondsToSlackTimestamp(time) < 60) {
+      web.chat.postMessage({
+        text: 'Haha four twenty blaze it',
+        channel: lastEvent.channel,
+      });
+    }
   }
 });
 
