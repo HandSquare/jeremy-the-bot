@@ -6,25 +6,6 @@ const http = require('http');
 const { getStateValue } = require('./db');
 const { delay, getCurrentAtWork } = require('./util');
 
-const getBufferFromRequest = (url) =>
-  new Promise((resolve, reject) => {
-    const protocol = url.startsWith('https') ? https : http;
-
-    protocol
-      .get(url, (resp) => {
-        const dataArray = [];
-        resp.on('data', (data) => {
-          dataArray.push(data);
-        });
-        resp.on('end', () => {
-          resolve(Buffer.concat(dataArray));
-        });
-      })
-      .on('error', (e) => {
-        reject(e.message);
-      });
-  });
-
 const getScreenshotOfSingleImage = async (page, imageUrl) => {
   await page.goto(imageUrl);
   const { width, height } = await page.evaluate(() => {
