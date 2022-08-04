@@ -11,23 +11,25 @@ const getTikTokThumb = async (event) => {
 
   await page.goto(event.text.slice(1, event.text.length - 1));
 
-  const { url, text } = await page.evaluate(() => {
+  const { url, text, video } = await page.evaluate(() => {
     const elem = document.querySelector('div[style^="background"]');
     if (!elem) return '';
     const imgStyle = elem.style.backgroundImage;
     return {
       url: imgStyle.slice(5, imgStyle.length - 2),
+      video: document.querySelector('video').src,
       text: document.querySelector('[data-e2e="browse-video-desc"]').innerText,
     };
   });
 
   browser.close();
+  console.log({ video, url, text });
 
   if (!url) return;
 
   let data;
   try {
-    data = await getBufferFromRequest(url);
+    data = await getBufferFromRequest(video);
   } catch (e) {
     console.error(e);
   }
@@ -35,8 +37,8 @@ const getTikTokThumb = async (event) => {
   web.files.upload({
     channels: event.channel,
     file: data,
-    filetype: 'auto',
-    filename: text,
+    filetype: 'mp4',
+    filename: `${text}.mp4`,
   });
 };
 
