@@ -29,7 +29,13 @@ const at = (time, task) => {
   events[time].push(task);
 };
 
+const getSecondsToSlackTimestamp = (ts) => {
+  const secondsNow = parseInt(Date.now().toString().slice(0, 10));
+  return secondsNow - parseFloat(ts);
+};
+
 module.exports = {
   at,
   startTimer,
+  getSecondsToSlackTimestamp,
 };
