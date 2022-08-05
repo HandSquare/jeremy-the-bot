@@ -63,10 +63,12 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
     try {
       await page.click('div.islrc > div > a');
     } catch (e) {
-      web.chat.postMessage({
-        channel: event.channel,
-        text: 'Nothing was found. (SafeSearch is on)',
-      });
+      if (atWork) {
+        web.chat.postMessage({
+          channel: event.channel,
+          text: 'Nothing was found. (SafeSearch is on)',
+        });
+      }
     }
     // Get image directly from url
     const firstImageUrl = await page.evaluate(async () => {

@@ -29,12 +29,6 @@ const at = (time, task) => {
   events[time].push(task);
 };
 
-startTimer();
-
-console.log(time);
-
-at('12:22', () => console.log('its 12:22'));
-
 module.exports = {
   at,
   startTimer,

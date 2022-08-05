@@ -2,14 +2,19 @@ const stopword = require('stopword');
 const { getSelf } = require('./self');
 const messageHistory = require('./messageHistory');
 const sendImagesScreenshot = require('./sendImagesScreenshot');
-const { delay, getCurrentAtWork } = require('./util');
+const {
+  delay,
+  getCurrentAtWork,
+  getUsersCurrentlyAtWork,
+  makeNiceListFromArray,
+} = require('./util');
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
 const cowsay = require('cowsay');
 const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
-const getTikTokThumb = require('./getTikTokThumb');
+const getTikTok = require('./getTikTok');
 
 let lastEvent;
 
@@ -28,7 +33,7 @@ at('18:30', async () => {
 at('16:20', async () => {
   if (lastEvent) {
     const time = lastEvent.ts;
-    if (getSecondsToSlackTimestamp(time) < 60) {
+    if (getSecondsToSlackTimestamp(time) < 60 * 5) {
       web.chat.postMessage({
         text: 'Haha four twenty blaze it',
         channel: lastEvent.channel,
@@ -264,6 +269,27 @@ module.exports = async (event) => {
       });
     }
 
+    if (event.text === 'Who is at work?') {
+      const userNamesAtWork = (await getUsersCurrentlyAtWork()).map(
+        (user) => user.profile.display_name
+      );
+
+      let msg;
+      if (userNamesAtWork.length === 0) {
+        msg = 'There is no one at work.';
+      } else if (userNamesAtWork.length === 1) {
+        msg = `*${makeNiceListFromArray(userNamesAtWork)}* is at work.`;
+      } else if (userNamesAtWork.length > 1) {
+        msg = `*${makeNiceListFromArray(userNamesAtWork)}* are at work.`;
+      }
+
+      web.chat.postMessage({
+        text: msg,
+        channel: event.channel,
+        as_user: false,
+      });
+    }
+
     if (event.text === 'I am no longer at work!') {
       if (!event.user) return;
       await updateState({ [`at_work.${event.user}`]: false });
@@ -289,7 +315,7 @@ module.exports = async (event) => {
         timestamp: event.ts,
         name: 'eyes',
       });
-      getTikTokThumb(event);
+      getTikTok(event);
     }
 
     // Funny ussy
@@ -315,7 +341,6 @@ module.exports = async (event) => {
       const parts = syllables(randomWord);
 
       const partsStart = randomWord.lastIndexOf(parts[parts.length - 1]);
-      console.log(partsStart);
       return randomWord.slice(0, partsStart) + 'ussy';
     };
 

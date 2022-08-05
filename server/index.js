@@ -3,11 +3,11 @@ const path = require('path');
 
 require('dotenv').config();
 
-const { web, rtm } = require('./slackClient');
+const { rtm } = require('./slackClient');
 const handleMessage = require('./handleMessage');
 const { gatherEmoji } = require('./emojiList');
 const handleReaction = require('./handleReaction');
-const { getSelf, setSelf } = require('./self');
+const { setSelf } = require('./self');
 const { startStore } = require('./db');
 const { startTimer } = require('./timer');
 

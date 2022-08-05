@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const { web } = require('./slackClient');
 const { getBufferFromRequest } = require('./util');
 
-const getTikTokThumb = async (event) => {
+const getTikTok = async (event) => {
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -42,4 +42,4 @@ const getTikTokThumb = async (event) => {
   });
 };
 
-module.exports = getTikTokThumb;
+module.exports = getTikTok;
