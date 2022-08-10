@@ -14,6 +14,7 @@ const cowsay = require('cowsay');
 const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
+const { generate } = require('./dalle');
 const getTikTok = require('./getTikTok');
 
 let lastEvent;
@@ -107,6 +108,23 @@ module.exports = async (event) => {
       const query = event.text.match(/, pull up (.*)/)[1];
       const firstImageOnly = true;
       await sendImagesScreenshot(event, query, firstImageOnly);
+    } else if (event.text.match(/, generate (.*)/)) {
+      // React to the message
+      await web.reactions.add({
+        channel: event.channel,
+        timestamp: event.ts,
+        name: 'artist',
+      });
+      const query = event.text.match(/, generate (.*)/)[1];
+      const data = await generate(query);
+      const buffer = Buffer.from(data.split(',')[1], 'base64');
+      web.files.upload({
+        channels: event.channel,
+        filetype: 'auto',
+        file: buffer,
+        text: query,
+        filename: query,
+      });
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
