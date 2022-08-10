@@ -19,7 +19,7 @@ const sendSearchScreenshot = async (event, query) => {
   let data = await page.screenshot();
 
   await browser.close();
-  console.log(data.slice(0, 1000));
+
   await web.files.upload({
     channels: event.channel,
     file: data,
