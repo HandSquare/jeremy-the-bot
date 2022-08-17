@@ -15,6 +15,7 @@ const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
 const getTikTok = require('./getTikTok');
+const sendPageScreenshot = require('./sendPageScreenshot');
 
 let lastEvent;
 
@@ -140,6 +141,23 @@ module.exports = async (event) => {
         .removeStopwords(lastMessage.text.split(' '))
         .join(' ');
       await sendImagesScreenshot(event, query);
+    } else if (event.text.toLowerCase().includes(', preview that link')) {
+      // React to the message
+      await web.reactions.add({
+        channel: event.channel,
+        timestamp: event.ts,
+        name: 'mag_right',
+      });
+
+      // Look up the previous message
+      const lastMessage = messageHistory[event.channel][1];
+      if (!lastMessage) return;
+
+      // https://regex101.com/library/y09jwv
+      const link = lastMessage.text.match(
+        /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/
+      )[1];
+      sendPageScreenshot(lastMessage, link, 'preview');
     } else if (event.text.match(/, look up (.*)/)) {
       // React to the message
       await web.reactions.add({
