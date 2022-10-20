@@ -215,6 +215,22 @@ module.exports = async (event) => {
         timestamp: event.ts,
         name: 'wave',
       });
+    } 
+    
+    // Reply to a greeting
+    if (event.text.match(/[H|h][i|ello] [j|J]eremy/)) {
+      let options = [
+        "Hey!",
+        "Hello.",
+        "What's up dude?"
+      ];
+      let text = options[Math.floor(Math.random() * options.length)];
+      await delay(1000);
+      await web.chat.postMessage({
+        text: text,
+        channel: event.channel,
+        as_user: false,
+      });
     }
 
     // Respond to "thanks" if someone says it to Jeremy
