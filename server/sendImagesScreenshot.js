@@ -34,12 +34,12 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
   });
 
   const IMAGE_SEARCH = `&tbm=isch`;
-  const LARGE_IMAGES_ONLY = '&tbs=isz:l';
+  const LARGE_IMAGES_ONLY = '&tbs=isz:l'; // append this to the url to enable it
 
   await page.goto(
     `https://www.google.com/search?q=${encodeURIComponent(
       query
-    )}${IMAGE_SEARCH}${LARGE_IMAGES_ONLY}`
+    )}${IMAGE_SEARCH}`
   );
 
   // read db to see who is at work
