@@ -74,7 +74,7 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
     const firstImageUrl = await page.evaluate(async () => {
       const img = document
         .getElementById('Sva75c') // the black sidebar
-        .querySelector('img'); // the first img
+        .querySelectorAll('img')[1]; // the first img is a favicon, the second is our result
 
       const waitToGetHiResImgSrc = () =>
         new Promise((resolve, reject) => {
