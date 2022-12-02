@@ -19,6 +19,7 @@
     "dotenv": "^16.0.1",
     "express": "^4.17.1",
     "firebase-admin": "^11.0.0",
+    "openai": "^3.1.0",
     "path": "^0.12.7",
     "puppeteer": "^1.18.1",
     "stopword": "^0.2.4"

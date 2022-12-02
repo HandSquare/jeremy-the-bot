@@ -16,6 +16,12 @@ const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
 const getTikTok = require('./getTikTok');
 const sendPageScreenshot = require('./sendPageScreenshot');
+const { Configuration, OpenAIApi } = require('openai');
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
 let lastEvent;
 
@@ -108,6 +114,31 @@ module.exports = async (event) => {
       const query = event.text.match(/, pull up (.*)/)[1];
       const firstImageOnly = true;
       await sendImagesScreenshot(event, query, firstImageOnly);
+    } else if (event.text.match(/, generate (.*)/)) {
+      // React to the message
+      await web.reactions.add({
+        channel: event.channel,
+        timestamp: event.ts,
+        name: 'eyes',
+      });
+      const query = event.text.match(/, generate (.*)/)[1];
+      try {
+        const response = await openai.createImage({
+          prompt: query,
+          n: 1,
+          size: '512x512',
+        });
+      } catch (e) {
+        await web.chat.postMessage({
+          text: 'error sry',
+          channel: event.channel,
+        });
+      }
+      image_url = response.data.data[0].url;
+      await web.chat.postMessage({
+        text: image_url,
+        channel: event.channel,
+      });
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
@@ -215,15 +246,11 @@ module.exports = async (event) => {
         timestamp: event.ts,
         name: 'wave',
       });
-    } 
-    
+    }
+
     // Reply to a greeting
     if (event.text.match(/[H|h][i|ello] [j|J]eremy/)) {
-      let options = [
-        "Hey!",
-        "Hello.",
-        "What's up dude?"
-      ];
+      let options = ['Hey!', 'Hello.', "What's up dude?"];
       let text = options[Math.floor(Math.random() * options.length)];
       await delay(1000);
       await web.chat.postMessage({

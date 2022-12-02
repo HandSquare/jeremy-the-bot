@@ -25,7 +25,7 @@ const getTikTok = async (event) => {
   browser.close();
   console.log({ video, url, text });
 
-  if (!url) return;
+  if (!video) throw new Error('no video data');
 
   let data;
   try {
@@ -33,6 +33,8 @@ const getTikTok = async (event) => {
   } catch (e) {
     console.error(e);
   }
+
+  console.log('data', data);
 
   web.files.upload({
     channels: event.channel,
