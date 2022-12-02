@@ -27,6 +27,14 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
+  setTimeout(() => {
+    // after 60s close the browser to prevent mem leaks
+    try {
+      browser.close();
+    } catch (e) {
+      // unhandled
+    }
+  }, 60000);
   const page = await browser.newPage();
   page.setViewport({
     width: 1280,
