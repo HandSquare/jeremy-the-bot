@@ -122,8 +122,9 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = event.text.match(/, generate (.*)/)[1];
+      let response;
       try {
-        const response = await openai.createImage({
+        response = await openai.createImage({
           prompt: query,
           n: 1,
           size: '512x512',
