@@ -7,6 +7,7 @@ const {
   getCurrentAtWork,
   getUsersCurrentlyAtWork,
   makeNiceListFromArray,
+  getBufferFromRequest,
 } = require('./util');
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
@@ -119,7 +120,7 @@ module.exports = async (event) => {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
-        name: 'eyes',
+        name: 'artist',
       });
       const query = event.text.match(/, generate (.*)/)[1];
       let response;
@@ -136,9 +137,13 @@ module.exports = async (event) => {
         });
       }
       image_url = response.data.data[0].url;
-      await web.chat.postMessage({
-        text: image_url,
-        channel: event.channel,
+      const data = await getBufferFromRequest(image_url);
+      await web.files.upload({
+        channels: event.channel,
+        file: data,
+        filetype: 'auto',
+        text: query,
+        filename: query,
       });
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
