@@ -130,21 +130,22 @@ module.exports = async (event) => {
           n: 1,
           size: '512x512',
         });
+        image_url = response.data.data[0].url;
+        const data = await getBufferFromRequest(image_url);
+        await web.files.upload({
+          channels: event.channel,
+          file: data,
+          filetype: 'auto',
+          text: query,
+          filename: query,
+        });
       } catch (e) {
+        console.log('err', e);
         await web.chat.postMessage({
-          text: 'error sry',
+          text: `error sry: ${e.message}`,
           channel: event.channel,
         });
       }
-      image_url = response.data.data[0].url;
-      const data = await getBufferFromRequest(image_url);
-      await web.files.upload({
-        channels: event.channel,
-        file: data,
-        filetype: 'auto',
-        text: query,
-        filename: query,
-      });
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
@@ -435,5 +436,10 @@ module.exports = async (event) => {
     }
   } catch (error) {
     console.log('An error occurred', error);
+    web.chat.postMessage({
+      text: `error!, ${error.message}`,
+      channel: event.channel,
+      as_user: false,
+    });
   }
 };
