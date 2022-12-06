@@ -377,14 +377,15 @@ module.exports = async (event) => {
       });
     }
 
-    if (event.text.startsWith('<https://www.tiktok.com/')) {
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-      });
-      getTikTok(event);
-    }
+    // This stopped working
+    // if (event.text.startsWith('<https://www.tiktok.com/')) {
+    //   await web.reactions.add({
+    //     channel: event.channel,
+    //     timestamp: event.ts,
+    //     name: 'eyes',
+    //   });
+    //   getTikTok(event);
+    // }
 
     // Funny ussy
     const syllables = (_word) => {
@@ -415,7 +416,7 @@ module.exports = async (event) => {
     const newWord = getNewWord(wordsWithoutStopwords);
 
     // give it a low percentage of happening
-    const probability = 0.003;
+    const probability = 0.0015;
 
     const names = ['jon', 'gio', 'rajan', 'nick', 'cleb', 'brian'];
     const name = names[Math.floor(Math.random() * names.length)];
