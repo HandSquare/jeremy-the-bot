@@ -17,12 +17,8 @@ const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
 const getTikTok = require('./getTikTok');
 const sendPageScreenshot = require('./sendPageScreenshot');
-const { Configuration, OpenAIApi } = require('openai');
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+const getDallEImage = require('./getDallEImage');
 
 let lastEvent;
 
@@ -115,37 +111,14 @@ module.exports = async (event) => {
       const query = event.text.match(/, pull up (.*)/)[1];
       const firstImageOnly = true;
       await sendImagesScreenshot(event, query, firstImageOnly);
+    } else if (event.text.toLowerCase().includes(', generate that')) {
+      // Look up the previous message
+      const lastMessage = messageHistory[event.channel][1];
+      if (!lastMessage) return;
+      getDallEImage(lastMessage, lastMessage.text);
     } else if (event.text.match(/, generate (.*)/)) {
-      // React to the message
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'artist',
-      });
       const query = event.text.match(/, generate (.*)/)[1];
-      let response;
-      try {
-        response = await openai.createImage({
-          prompt: query,
-          n: 1,
-          size: '512x512',
-        });
-        image_url = response.data.data[0].url;
-        const data = await getBufferFromRequest(image_url);
-        await web.files.upload({
-          channels: event.channel,
-          file: data,
-          filetype: 'auto',
-          text: query,
-          filename: query,
-        });
-      } catch (e) {
-        console.log('err', e);
-        await web.chat.postMessage({
-          text: `error sry: ${e.message}`,
-          channel: event.channel,
-        });
-      }
+      getDallEImage(event, query);
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
