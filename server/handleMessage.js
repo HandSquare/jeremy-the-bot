@@ -19,6 +19,7 @@ const getTikTok = require('./getTikTok');
 const sendPageScreenshot = require('./sendPageScreenshot');
 
 const getDallEImage = require('./getDallEImage');
+const getChatbot = require('./getChatbot');
 
 let lastEvent;
 
@@ -119,6 +120,9 @@ module.exports = async (event) => {
     } else if (event.text.match(/, generate (.*)/)) {
       const query = event.text.match(/, generate (.*)/)[1];
       getDallEImage(event, query);
+    } else if (event.text.match(/jeremybot, (.*)/)) {
+      const query = event.text.match(/jeremybot, (.*)/)[1];
+      getChatbot(event, query);
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
