@@ -16,7 +16,7 @@ module.exports = async (event, query) => {
   let response;
   try {
     response = await openai.createCompletion({
-      model: 'text-curie-001',
+      model: 'text-davinci-003',
       prompt: query,
       max_tokens: 256,
     });
