@@ -363,55 +363,6 @@ module.exports = async (event) => {
     //   });
     //   getTikTok(event);
     // }
-
-    // Funny ussy
-    const syllables = (_word) => {
-      let word = _word.toLowerCase();
-      const ret = word
-        .replace(/(?:[^laeiouy]es|ed|lle|[^laeiouy]e)$/, '')
-        .replace(/^y/, '')
-        .match(/[aeiouy]{1,2}/g);
-      return ret || [];
-    };
-
-    const getNewWord = (wordList) => {
-      const newWords = wordList
-        // test that it only contains letters
-        .filter((word) => /^[a-zA-Z]+$/.test(word))
-        // test that it's more than one syllable
-        .filter((word) => syllables(word).length > 1);
-
-      if (!newWords.length) return undefined;
-      const randomWord = newWords[Math.floor(Math.random() * newWords.length)];
-
-      const parts = syllables(randomWord);
-
-      const partsStart = randomWord.lastIndexOf(parts[parts.length - 1]);
-      return randomWord.slice(0, partsStart) + 'ussy';
-    };
-
-    const newWord = getNewWord(wordsWithoutStopwords);
-
-    // give it a low percentage of happening
-    const probability = 0.0015;
-
-    const names = ['jon', 'gio', 'rajan', 'nick', 'cleb', 'brian'];
-    const name = names[Math.floor(Math.random() * names.length)];
-    const templates = [
-      (word) => `i heard ${name} loves a tight ${word}`,
-      (word) => `i would love to suck ${name}s ${word}`,
-      (word) => `${name} can eat my ${word} any day`,
-      (word) => `wow, ${name} can sure work a ${word}`,
-      (word) => `${name} and ${word} are a match made in heaven`,
-    ];
-
-    if (Math.random() < probability && newWord !== undefined) {
-      await web.chat.postMessage({
-        text: templates[Math.floor(Math.random() * templates.length)](newWord),
-        channel: event.channel,
-      });
-      await sendImagesScreenshot(event, newWord, true);
-    }
   } catch (error) {
     console.log('An error occurred', error);
     web.chat.postMessage({
