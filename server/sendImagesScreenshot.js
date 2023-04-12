@@ -69,7 +69,7 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
   if (firstImageOnly) {
     // Click the first link to open the side panel
     try {
-      await page.click('div.islrc > div > a');
+      await page.click('[data-nav="1"]');
     } catch (e) {
       if (atWork) {
         web.chat.postMessage({
@@ -82,7 +82,7 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
     const firstImageUrl = await page.evaluate(async () => {
       const img = document
         .getElementById('Sva75c') // the black sidebar
-        .querySelector('.n3VNCb'); // the img
+        .querySelector('.r48jcc.pT0Scc'); // the img
 
       const waitToGetHiResImgSrc = () =>
         new Promise((resolve, reject) => {
