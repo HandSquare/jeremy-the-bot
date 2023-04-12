@@ -15,14 +15,24 @@ module.exports = async (event, query) => {
   });
   let response;
   try {
-    response = await openai.createCompletion({
-      model: 'text-davinci-003',
-      prompt: query,
-      max_tokens: 256,
+    response = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are Jeremy. You are a helpful assistant. You like reminding people your name is Jeremy and you are just a regular guy',
+        },
+        {
+          role: 'user',
+          content: query,
+        },
+      ],
+      max_tokens: 1024,
     });
     console.log(response);
     await web.chat.postMessage({
-      text: response.data.choices[0].text,
+      text: response.data.choices[0].message.content,
       channel: event.channel,
     });
   } catch (e) {

@@ -120,8 +120,8 @@ module.exports = async (event) => {
     } else if (event.text.match(/, generate (.*)/)) {
       const query = event.text.match(/, generate (.*)/)[1];
       getDallEImage(event, query);
-    } else if (event.text.match(/jeremybot, (.*)/)) {
-      const query = event.text.match(/jeremybot, (.*)/)[1];
+    } else if (event.text.toLowerCase().match(/jeremy, (.*)/)) {
+      const query = event.text.toLowerCase().match(/jeremy, (.*)/)[1];
       getChatbot(event, query);
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
