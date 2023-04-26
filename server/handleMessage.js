@@ -121,7 +121,7 @@ module.exports = async (event) => {
       const query = event.text.match(/, generate (.*)/)[1];
       getDallEImage(event, query);
     } else if (event.text.toLowerCase().match(/jeremy, (.*)/)) {
-      const query = event.text.toLowerCase().match(/jeremy, (.*)/)[1];
+      const query = event.text.toLowerCase().match(/jeremy, (.*)/s)[1];
       getChatbot(event, query);
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
