@@ -120,7 +120,10 @@ module.exports = async (event) => {
     } else if (event.text.match(/, generate (.*)/)) {
       const query = event.text.match(/, generate (.*)/)[1];
       getDallEImage(event, query);
-    } else if (event.text.toLowerCase().match(/jeremy, (.*)/)) {
+    } else if (
+      event.text.toLowerCase().match(/jeremy, (.*)/) &&
+      event.subtype !== 'bot_message'
+    ) {
       const query = event.text.toLowerCase().match(/jeremy, (.*)/s)[1];
       getChatbot(event, query);
     } else if (event.text.toLowerCase().includes(', pull that up')) {
