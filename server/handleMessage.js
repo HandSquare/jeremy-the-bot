@@ -53,7 +53,7 @@ module.exports = async (event) => {
   if (!messageHistory[event.channel]) {
     messageHistory[event.channel] = [];
   }
-  if (messageHistory[event.channel].length > 5) {
+  if (messageHistory[event.channel].length > 10) {
     messageHistory[event.channel].pop();
   }
 
@@ -355,6 +355,16 @@ module.exports = async (event) => {
         channel: event.channel,
         as_user: false,
       });
+    }
+
+    if (event.text === 'What are the boys talking about?') {
+      const history = messageHistory[event.channel].map((event) => event.text);
+      getChatbot(
+        event,
+        `Jeremy, given the following JSON chat history, tell me what the boys are talking about. Do not mention the fact that it is JSON. Just answer like it is a conversation.
+        ${JSON.stringify(history)}
+        `
+      );
     }
 
     // This stopped working
