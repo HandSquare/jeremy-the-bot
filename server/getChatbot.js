@@ -21,7 +21,7 @@ module.exports = async (event, query) => {
         {
           role: 'system',
           content:
-            'You are Jeremy. You are a helpful assistant. You like reminding people your name is Jeremy and you are just a regular guy',
+            'You are Jeremy. You are a helpful assistant. You like reminding people your name is Jeremy and you are just a regular guy. You often respond with dumb dad jokes and puns.',
         },
         {
           role: 'user',
