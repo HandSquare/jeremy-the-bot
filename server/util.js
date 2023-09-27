@@ -68,4 +68,5 @@ module.exports = {
   getCurrentAtWork,
   getUsersCurrentlyAtWork,
   getBufferFromRequest,
+  getUsers,
 };

@@ -8,6 +8,7 @@ const {
   getUsersCurrentlyAtWork,
   makeNiceListFromArray,
   getBufferFromRequest,
+  getUsers,
 } = require('./util');
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
@@ -20,6 +21,7 @@ const sendPageScreenshot = require('./sendPageScreenshot');
 
 const getDallEImage = require('./getDallEImage');
 const getChatbot = require('./getChatbot');
+const { performGoogleSearch } = require('./performGoogleSearch');
 
 let lastEvent;
 
@@ -100,8 +102,7 @@ module.exports = async (event) => {
       });
       const match = Math.random() > 0.5 ? 1 : 2;
       const query = event.text.match(/, pull up (.*) or (.*)/);
-      const firstImageOnly = true;
-      await sendImagesScreenshot(event, query[match], firstImageOnly);
+      performGoogleSearch(event, query[match]);
     } else if (event.text.match(/, pull up (.*)/)) {
       // React to the message
       await web.reactions.add({
@@ -110,8 +111,7 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = event.text.match(/, pull up (.*)/)[1];
-      const firstImageOnly = true;
-      await sendImagesScreenshot(event, query, firstImageOnly);
+      performGoogleSearch(event, query);
     } else if (event.text.toLowerCase().includes(', generate that')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
@@ -138,8 +138,7 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = lastMessage.text;
-      const firstImageOnly = true;
-      await sendImagesScreenshot(event, query, firstImageOnly);
+      performGoogleSearch(event, query);
     } else if (
       event.text.match(/[W|w]hat[\'|\’]?s that/) &&
       event.text.match(/[W|w]hat[\'|\’]?s that/).length
@@ -197,8 +196,7 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = lastFile.files.pop().name;
-      const firstImageOnly = true;
-      await sendImagesScreenshot(event, query, firstImageOnly);
+      performGoogleSearch(event, query);
     } else if (
       // last message exists
       messageHistory[event.channel][1] &&
@@ -358,11 +356,32 @@ module.exports = async (event) => {
     }
 
     if (event.text === 'What are the boys talking about?') {
-      const history = messageHistory[event.channel].map((event) => event.text);
+      // const history = messageHistory[event.channel].map((event) => event.text);
+      const users = await getUsers();
+      const userHash = users.reduce((prev, curr) => {
+        prev[curr.id] = curr.name;
+        return prev;
+      }, {});
+
+      console.log({ userHash });
+      const history = await web.conversations.history({
+        channel: event.channel,
+        limit: 25,
+      });
+      const messages = history.messages
+        .reverse()
+        .map((msg) => {
+          let user = userHash[msg.user];
+          if (user === undefined && msg.username === 'Jeremy') user = 'Jeremy';
+          return `${user}: ${msg.text}`;
+        })
+        .join('\n');
+      // console.log({history: history.messages})
+      console.log(messages);
       getChatbot(
         event,
-        `Jeremy, given the following JSON chat history, tell me what the boys are talking about. Do not mention the fact that it is JSON. Just answer like it is a conversation.
-        ${JSON.stringify(history)}
+        `Jeremy, given the following chat history, tell me what the boys are talking about.
+        ${messages}
         `
       );
     }

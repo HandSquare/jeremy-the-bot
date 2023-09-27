@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@googleapis/customsearch": "^1.0.4",
     "@slack/rtm-api": "^5.0.1",
     "args-parser": "^1.1.0",
     "cowsay": "^1.4.0",
