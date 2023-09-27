@@ -20,10 +20,7 @@ const getSearchImage = async (query) => {
   });
 
   console.log(res.data.items);
-  const firstImg = res.data.items
-    .slice(0, 5)
-    .map((item) => item.link)
-    .join('\n');
+  const firstImg = res.data.items[0].link;
 
   return firstImg;
 };

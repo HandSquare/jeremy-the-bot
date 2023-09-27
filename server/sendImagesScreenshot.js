@@ -42,7 +42,6 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
   });
 
   const IMAGE_SEARCH = `&tbm=isch`;
-  const LARGE_IMAGES_ONLY = '&tbs=isz:l'; // append this to the url to enable it
 
   await page.goto(
     `https://www.google.com/search?q=${encodeURIComponent(
@@ -66,69 +65,14 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
     await page.waitForNavigation();
   }
 
-  if (firstImageOnly) {
-    // Click the first link to open the side panel
-    try {
-      await page.click('[data-nav="1"]');
-    } catch (e) {
-      if (atWork) {
-        web.chat.postMessage({
-          channel: event.channel,
-          text: 'Nothing was found. (SafeSearch is on)',
-        });
-      }
-    }
-    // Get image directly from url
-    const firstImageUrl = await page.evaluate(async () => {
-      const img = document
-        .getElementById('Sva75c') // the black sidebar
-        .querySelector('.r48jcc.pT0Scc'); // the img
-
-      const waitToGetHiResImgSrc = () =>
-        new Promise((resolve, reject) => {
-          // Timeout 2 seconds and resolve the original src, in case our smart url checker never resolves.
-          // Or if the img takes forever to load
-          setTimeout(() => {
-            resolve(img.src);
-          }, 2000);
-
-          const observer = new MutationObserver((mutations) => {
-            resolve(mutations[0].target.src);
-          });
-
-          observer.observe(img, {
-            attributeFilter: ['src'],
-          });
-        });
-
-      const imgSrc = await waitToGetHiResImgSrc();
-      return imgSrc;
-    });
-    if (firstImageUrl.startsWith('data:')) {
-      data = await getScreenshotOfSingleImage(page, firstImageUrl);
-      web.files.upload({
-        channels: event.channel,
-        file: data,
-        filetype: 'auto',
-        text: query,
-        filename: query,
-      });
-    } else {
-      web.chat.postMessage({
-        channel: event.channel,
-        text: firstImageUrl,
-      });
-    }
-  } else {
-    data = await page.screenshot();
-    web.files.upload({
-      channels: event.channel,
-      file: data,
-      filetype: 'auto',
-      text: query,
-      filename: query,
-    });
-  }
+  data = await page.screenshot();
+  web.files.upload({
+    channels: event.channel,
+    file: data,
+    filetype: 'auto',
+    text: query,
+    filename: query,
+  });
 
   browser.close();
 };
