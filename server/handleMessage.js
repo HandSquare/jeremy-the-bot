@@ -13,7 +13,6 @@ const {
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
 const cowsay = require('cowsay');
-const sendSearchScreenshot = require('./sendSearchScreenshot');
 const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
 const getTikTok = require('./getTikTok');
@@ -21,7 +20,10 @@ const sendPageScreenshot = require('./sendPageScreenshot');
 
 const getDallEImage = require('./getDallEImage');
 const getChatbot = require('./getChatbot');
-const { performGoogleSearch } = require('./performGoogleSearch');
+const {
+  performGoogleImageSearch,
+  performGoogleTextSearch,
+} = require('./performGoogleSearch');
 
 let lastEvent;
 
@@ -102,7 +104,7 @@ module.exports = async (event) => {
       });
       const match = Math.random() > 0.5 ? 1 : 2;
       const query = event.text.match(/, pull up (.*) or (.*)/);
-      performGoogleSearch(event, query[match]);
+      performGoogleImageSearch(event, query[match]);
     } else if (event.text.match(/, pull up (.*)/)) {
       // React to the message
       await web.reactions.add({
@@ -111,7 +113,7 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = event.text.match(/, pull up (.*)/)[1];
-      performGoogleSearch(event, query);
+      performGoogleImageSearch(event, query);
     } else if (event.text.toLowerCase().includes(', generate that')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
@@ -138,7 +140,7 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = lastMessage.text;
-      performGoogleSearch(event, query);
+      performGoogleImageSearch(event, query);
     } else if (
       event.text.match(/[W|w]hat[\'|\’]?s that/) &&
       event.text.match(/[W|w]hat[\'|\’]?s that/).length
@@ -183,7 +185,7 @@ module.exports = async (event) => {
         name: 'mag_right',
       });
       const query = event.text.match(/, look up (.*)/)[1];
-      await sendSearchScreenshot(event, query);
+      await performGoogleTextSearch(event, query);
     } else if (event.text.match(/[E|e]nhance/)) {
       // React to the message
       const lastFile = messageHistory[event.channel].find(
@@ -196,7 +198,7 @@ module.exports = async (event) => {
         name: 'eyes',
       });
       const query = lastFile.files.pop().name;
-      performGoogleSearch(event, query);
+      performGoogleImageSearch(event, query);
     } else if (
       // last message exists
       messageHistory[event.channel][1] &&

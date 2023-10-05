@@ -7,10 +7,7 @@ const customSearchId = process.env.GOOGLE_SEARCH_ID;
 
 const search = customsearch('v1');
 
-const getSearchImage = async (query) => {
-  // read db to see who is at work
-  const atWork = (await getCurrentAtWork()) > 0;
-
+const getSearchImage = async (query, atWork) => {
   const res = await search.cse.list({
     cx: customSearchId,
     q: query,
@@ -19,27 +16,50 @@ const getSearchImage = async (query) => {
     safe: atWork ? 'active' : 'off',
   });
 
-  console.log(res.data.items);
   const firstImg = res.data.items[0].link;
 
   return firstImg;
 };
 
-const performGoogleSearch = async (event, query) => {
-  const imgUrl = await getSearchImage(query);
+const getSearchText = async (query) => {
+  // read db to see who is at work
+  const res = await search.cse.list({
+    cx: customSearchId,
+    q: query,
+    auth: apiKey,
+  });
+
+  const { title, link, snippet } = res.data.items[0];
+  return {
+    title,
+    link,
+    snippet,
+  };
+};
+
+const performGoogleImageSearch = async (event, query) => {
+  const atWork = (await getCurrentAtWork()) > 0;
+  const imgUrl = await getSearchImage(query, atWork);
   web.chat.postMessage({
     channel: event.channel,
     text: imgUrl,
   });
 };
 
+const performGoogleTextSearch = async (event, query) => {
+  const { title, link, snippet } = await getSearchText(query);
+  web.chat.postMessage({
+    channel: event.channel,
+    text: `<${link}|*${title}*>\n>${snippet}`,
+  });
+};
+
 const go = async () => {
-  const val = await getSearchImage('dog');
+  const val = await getSearchText('dog');
   console.log(val);
 };
 
-// go();
-
 module.exports = {
-  performGoogleSearch,
+  performGoogleTextSearch,
+  performGoogleImageSearch,
 };
