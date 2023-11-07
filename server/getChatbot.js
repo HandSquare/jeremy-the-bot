@@ -1,8 +1,8 @@
-const { Configuration, OpenAIApi } = require('openai');
-const configuration = new Configuration({
+const OpenAI = require('openai');
+const configuration = {
   apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+};
+const openai = new OpenAI(configuration);
 
 const { web } = require('./slackClient');
 const { getBufferFromRequest } = require('./util');
@@ -15,7 +15,7 @@ module.exports = async (event, query) => {
   });
   let response;
   try {
-    response = await openai.createChatCompletion({
+    response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         {
@@ -32,7 +32,7 @@ module.exports = async (event, query) => {
     });
     console.log(response);
     await web.chat.postMessage({
-      text: response.data.choices[0].message.content,
+      text: response.choices[0].message.content,
       channel: event.channel,
     });
   } catch (e) {
