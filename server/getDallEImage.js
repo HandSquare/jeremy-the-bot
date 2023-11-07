@@ -1,8 +1,8 @@
-const { Configuration, OpenAIApi } = require('openai');
-const configuration = new Configuration({
+const OpenAI = require('openai');
+const configuration = {
   apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+};
+const openai = new OpenAI(configuration);
 
 const { web } = require('./slackClient');
 const { getBufferFromRequest } = require('./util');
@@ -15,13 +15,17 @@ module.exports = async (event, query) => {
   });
   let response;
   try {
-    response = await openai.createImage({
+    response = await openai.images.generate({
+      model: 'dall-e-3',
       prompt: query,
       n: 1,
-      size: '512x512',
+      size: '1024x1024',
     });
-    image_url = response.data.data[0].url;
+
+    const image_url = response.data[0].url;
+
     const data = await getBufferFromRequest(image_url);
+
     await web.files.upload({
       channels: event.channel,
       file: data,
