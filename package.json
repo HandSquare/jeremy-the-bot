@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@googleapis/customsearch": "^1.0.4",
-    "@slack/rtm-api": "^5.0.1",
+    "@slack/rtm-api": "^6.1.1",
     "args-parser": "^1.1.0",
     "cowsay": "^1.4.0",
     "dotenv": "^16.0.1",
