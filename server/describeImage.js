@@ -1,14 +1,30 @@
+const axios = require('axios');
 const OpenAI = require('openai');
 const configuration = {
   apiKey: process.env.OPENAI_API_KEY,
 };
+const { web } = require('./slackClient');
+
 const openai = new OpenAI(configuration);
 
-const { web } = require('./slackClient');
-const { getBufferFromRequest } = require('./util');
+module.exports = async (event, file, imgUrl) => {
+  console.log({ file });
+  let url;
 
-module.exports = async (event, query) => {
-  console.log({ event });
+  if (imgUrl) url = imgUrl;
+  else if (file) {
+    const link = file.url_private_download || file.url_private;
+    const resp = await axios.get(link, {
+      responseType: 'arraybuffer',
+      headers: {
+        Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+      },
+    });
+    const data = resp.data;
+    const base64 = Buffer.from(data).toString('base64');
+    url = `data:image/jpeg;base64,${base64}`;
+  }
+
   await web.reactions.add({
     channel: event.channel,
     timestamp: event.ts,
@@ -26,7 +42,18 @@ module.exports = async (event, query) => {
         },
         {
           role: 'user',
-          content: query,
+          content: [
+            {
+              type: 'text',
+              text: 'What’s in this image? Please sum it up in just a few sentences.',
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: url,
+              },
+            },
+          ],
         },
       ],
       max_tokens: 1024,

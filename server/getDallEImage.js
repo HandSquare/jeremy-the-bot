@@ -38,6 +38,7 @@ module.exports = async (event, query) => {
     await web.chat.postMessage({
       text: `error sry: ${e.message}`,
       channel: event.channel,
+      thread_ts: event.thread_ts,
     });
   }
 };

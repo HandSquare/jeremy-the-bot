@@ -43,6 +43,7 @@ const performGoogleImageSearch = async (event, query) => {
   web.chat.postMessage({
     channel: event.channel,
     text: imgUrl,
+    thread_ts: event.thread_ts,
   });
 };
 
@@ -51,6 +52,7 @@ const performGoogleTextSearch = async (event, query) => {
   web.chat.postMessage({
     channel: event.channel,
     text: `<${link}|*${title}*>\n>${snippet}`,
+    thread_ts: event.thread_ts,
   });
 };
 
