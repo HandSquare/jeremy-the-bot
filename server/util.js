@@ -62,6 +62,15 @@ const makeNiceListFromArray = (arrayOfStrings) => {
   }
 };
 
+function extractImgUrl(text) {
+  if (!text) return null;
+  const imageUrlPattern = /<([^>]*\.(?:jpg|gif|png|jpeg|bmp)[^>]*)>/g;
+
+  const urls = text.match(imageUrlPattern);
+  console.log({ text, urls });
+  return urls ? urls[0].replace(/<|>/g, '') : null;
+}
+
 module.exports = {
   delay,
   makeNiceListFromArray,
@@ -69,4 +78,5 @@ module.exports = {
   getUsersCurrentlyAtWork,
   getBufferFromRequest,
   getUsers,
+  extractImgUrl,
 };

@@ -9,6 +9,7 @@ const {
   makeNiceListFromArray,
   getBufferFromRequest,
   getUsers,
+  extractImgUrl,
 } = require('./util');
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
@@ -24,6 +25,7 @@ const {
   performGoogleImageSearch,
   performGoogleTextSearch,
 } = require('./performGoogleSearch');
+const describeImage = require('./describeImage');
 
 let lastEvent;
 
@@ -65,8 +67,6 @@ module.exports = async (event) => {
 
   // Add message to queue
   messageHistory[event.channel].unshift(event);
-
-  console.log('messageHistory: ', messageHistory);
 
   try {
     /*
@@ -156,10 +156,20 @@ module.exports = async (event) => {
         name: 'eyes',
         thread_ts: event.ts,
       });
-      const query = stopword
-        .removeStopwords(lastMessage.text.split(' '))
-        .join(' ');
-      await sendImagesScreenshot(event, query);
+
+      const file = lastMessage.files ? lastMessage.files[0] : null;
+      const url = extractImgUrl(lastMessage?.text || lastMessage.message?.text);
+      if (file) {
+        describeImage(event, file);
+      } else if (url) {
+        describeImage(event, undefined, url);
+      } else {
+        const query = stopword
+          .removeStopwords(lastMessage.text.split(' '))
+          .join(' ');
+
+        await sendImagesScreenshot(event, query);
+      }
     } else if (event.text.toLowerCase().includes(', preview that link')) {
       // React to the message
       await web.reactions.add({
@@ -213,6 +223,7 @@ module.exports = async (event) => {
         text: event.text,
         channel: event.channel,
         as_user: false,
+        thread_ts: event.thread_ts,
         // username: // getSelf().id ??
       });
     } else if (event.text.match(/, cowsay (.*)/)) {
@@ -223,6 +234,7 @@ module.exports = async (event) => {
         channel: event.channel,
         as_user: true,
         username: 'cow',
+        thread_ts: event.thread_ts,
       });
     }
 
@@ -244,6 +256,7 @@ module.exports = async (event) => {
         text: text,
         channel: event.channel,
         as_user: false,
+        thread_ts: event.thread_ts,
       });
     }
 
@@ -268,6 +281,7 @@ module.exports = async (event) => {
         text: text,
         channel: event.channel,
         as_user: false,
+        thread_ts: event.thread_ts,
         // username: // how can we determine jeremy's username, rather than his bot name?
       });
     }
@@ -280,6 +294,7 @@ module.exports = async (event) => {
         text: text,
         channel: event.channel,
         as_user: false,
+        thread_ts: event.thread_ts,
         // username: getSelf().id doesn't work? or does it?
       });
     }
@@ -335,6 +350,7 @@ module.exports = async (event) => {
         text: msg,
         channel: event.channel,
         as_user: false,
+        thread_ts: event.thread_ts,
       });
     }
 
@@ -354,6 +370,7 @@ module.exports = async (event) => {
         text: message,
         channel: event.channel,
         as_user: false,
+        thread_ts: event.thread_ts,
       });
     }
 
