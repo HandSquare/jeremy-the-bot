@@ -21,7 +21,6 @@ module.exports = async (event, query) => {
       n: 1,
       size: '1024x1024',
       quality: 'hd',
-      style: 'natural',
     });
 
     const image_url = response.data[0].url;
