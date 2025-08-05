@@ -19,13 +19,15 @@ module.exports = async (event, query) => {
       model: 'gpt-image-1',
       prompt: query,
       n: 1,
-      size: 'auto',
-      quality: 'high',
+      size: '1024x1024',
+      quality: 'medium',
     });
 
-    const image_url = response.data[0].url;
+    // The API now returns base64 data instead of URL
+    const base64Data = response.data[0].b64_json;
 
-    const data = await getBufferFromRequest(image_url);
+    // Convert base64 to Buffer for Slack upload
+    const data = Buffer.from(base64Data, 'base64');
 
     await web.files.upload({
       channels: event.channel,
