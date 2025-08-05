@@ -16,11 +16,11 @@ module.exports = async (event, query) => {
   let response;
   try {
     response = await openai.images.generate({
-      model: 'dall-e-3',
+      model: 'gpt-image-1',
       prompt: query,
       n: 1,
-      size: '1024x1024',
-      quality: 'hd',
+      size: 'auto',
+      quality: 'high',
     });
 
     const image_url = response.data[0].url;
