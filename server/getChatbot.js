@@ -17,7 +17,7 @@ module.exports = async (event, query) => {
   let response;
   try {
     response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages: [
         {
           role: 'system',
