@@ -29,7 +29,7 @@ module.exports = async (event, query) => {
           content: query,
         },
       ],
-      max_tokens: 1024,
+      max_completion_tokens: 1024,
     });
     console.log(response);
     await web.chat.postMessage({
