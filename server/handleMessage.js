@@ -241,7 +241,7 @@ module.exports = async (event) => {
       // Conservative AI-based router fallback: only when no explicit command matched
       if (event.subtype !== 'bot_message') {
         const decision = await shouldRespond(event);
-        if (decision.respond && decision.confidence >= 0.5) {
+        if (decision.respond && decision.confidence >= 0.8) {
           const query = event.text.replace(/^jeremy,?\s*/i, '');
           getChatbot(event, query);
         }
