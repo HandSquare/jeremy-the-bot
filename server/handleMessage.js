@@ -26,6 +26,7 @@ const {
   performGoogleTextSearch,
 } = require('./performGoogleSearch');
 const describeImage = require('./describeImage');
+const shouldRespond = require('./shouldRespond');
 
 let lastEvent;
 
@@ -236,6 +237,15 @@ module.exports = async (event) => {
         username: 'cow',
         thread_ts: event.thread_ts,
       });
+    } else {
+      // Conservative AI-based router fallback: only when no explicit command matched
+      if (event.subtype !== 'bot_message') {
+        const decision = await shouldRespond(event);
+        if (decision.respond && decision.confidence >= 0.5) {
+          const query = event.text.replace(/^jeremy,?\s*/i, '');
+          getChatbot(event, query);
+        }
+      }
     }
 
     // Self awareness
