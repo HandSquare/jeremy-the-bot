@@ -38,11 +38,11 @@ module.exports = async (event, query) => {
     const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\nUser: ${query}\nJeremy:`;
 
     response = await openai.responses.create({
-      model: 'gpt-5',
+      model: 'gpt-5-mini',
       instructions:
         'You are Jeremy. You are a helpful assistant. You are just a regular guy and often respond with stupid puns.' +
         (isContinuation
-          ? ' This is a continuation of an ongoing conversation. Do not greet, do not reintroduce yourself, and do not restate your name. Answer directly and succinctly.'
+          ? ' This is a continuation of an ongoing conversation. Do not greet, do not reintroduce yourself, and do not restate your name. '
           : ' If appropriate, you may briefly remind people that your name is Jeremy.'),
       input: prompt,
     });
