@@ -13,6 +13,7 @@ const {
 } = require('./util');
 const { web, rtm } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
+const { addReactionOnce } = require('./reactionUtils');
 const cowsay = require('cowsay');
 const { updateState, getState, getStateValue } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
@@ -84,35 +85,19 @@ module.exports = async (event) => {
     if (!event.text) return;
     if (event.text.match(/[W|w]hat means (.*)/)) {
       // React to the message
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-      });
+      await addReactionOnce(event.channel, event.ts, 'eyes');
       const query = event.text.match(/[W|w]hat means (.*)/)[1];
       await sendImagesScreenshot(event, query);
     } else if (event.text.match(/, pull up (.*) or (.*)/)) {
       // React to the message
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-      });
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'game_die',
-      });
+      await addReactionOnce(event.channel, event.ts, 'eyes');
+      await addReactionOnce(event.channel, event.ts, 'game_die');
       const match = Math.random() > 0.5 ? 1 : 2;
       const query = event.text.match(/, pull up (.*) or (.*)/);
       performGoogleImageSearch(event, query[match]);
     } else if (event.text.match(/, pull up (.*)/)) {
       // React to the message
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-      });
+      await addReactionOnce(event.channel, event.ts, 'eyes');
       const query = event.text.match(/, pull up (.*)/)[1];
       performGoogleImageSearch(event, query);
     } else if (event.text.toLowerCase().includes(', generate that')) {
@@ -135,11 +120,7 @@ module.exports = async (event) => {
       if (!lastMessage) return;
 
       // React to the message
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-      });
+      await addReactionOnce(event.channel, event.ts, 'eyes');
       const query = lastMessage.text;
       performGoogleImageSearch(event, query);
     } else if (
@@ -173,11 +154,7 @@ module.exports = async (event) => {
       }
     } else if (event.text.toLowerCase().includes(', preview that link')) {
       // React to the message
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'mag_right',
-      });
+      await addReactionOnce(event.channel, event.ts, 'mag_right');
 
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
@@ -190,11 +167,7 @@ module.exports = async (event) => {
       sendPageScreenshot(lastMessage, link, 'preview');
     } else if (event.text.match(/, look up (.*)/)) {
       // React to the message
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'mag_right',
-      });
+      await addReactionOnce(event.channel, event.ts, 'mag_right');
       const query = event.text.match(/, look up (.*)/)[1];
       await performGoogleTextSearch(event, query);
     } else if (event.text.match(/[E|e]nhance/)) {
@@ -203,11 +176,7 @@ module.exports = async (event) => {
         (message) => message.files
       );
       if (!lastFile) return;
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-      });
+      await addReactionOnce(event.channel, event.ts, 'eyes');
       const query = lastFile.files.pop().name;
       performGoogleImageSearch(event, query);
     } else if (
@@ -250,11 +219,7 @@ module.exports = async (event) => {
 
     // Self awareness
     if (event.text.match(/[j|J]eremy/) || event.text.includes(self.id)) {
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'wave',
-      });
+      await addReactionOnce(event.channel, event.ts, 'wave');
     }
 
     // Reply to a greeting
@@ -319,11 +284,7 @@ module.exports = async (event) => {
     for (let word of wordsWithoutStopwords) {
       if (emojiList.includes(word)) {
         await delay(300);
-        await web.reactions.add({
-          channel: event.channel,
-          timestamp: event.ts,
-          name: word,
-        });
+        await addReactionOnce(event.channel, event.ts, word);
       }
     }
 
