@@ -27,7 +27,6 @@ const {
   performGoogleTextSearch,
 } = require('./performGoogleSearch');
 const describeImage = require('./describeImage');
-const shouldRespond = require('./shouldRespond');
 
 let lastEvent;
 
@@ -114,6 +113,25 @@ module.exports = async (event) => {
     ) {
       const query = event.text.toLowerCase().match(/jeremy, (.*)/s)[1];
       getChatbot(event, query);
+    } else if (event.thread_ts && event.subtype !== 'bot_message') {
+      // Check if Jeremy has participated in this thread
+      const threadHistory = messageHistory[event.channel] || [];
+      const jeremyInThread = threadHistory.some(
+        (msg) =>
+          (msg.thread_ts === event.thread_ts &&
+            msg.subtype === 'bot_message' &&
+            (msg.user === self.id ||
+              msg.username?.toLowerCase() === self.name.toLowerCase())) ||
+          (msg.subtype === 'bot_message' &&
+            !msg.thread_ts &&
+            (msg.user === self.id ||
+              msg.username?.toLowerCase() === self.name.toLowerCase()) &&
+            threadHistory.some((m) => m.thread_ts === event.thread_ts))
+      );
+
+      if (jeremyInThread) {
+        getChatbot(event, event.text);
+      }
     } else if (event.text.toLowerCase().includes(', pull that up')) {
       // Look up the previous message
       const lastMessage = messageHistory[event.channel][1];
@@ -206,15 +224,6 @@ module.exports = async (event) => {
         username: 'cow',
         thread_ts: event.thread_ts,
       });
-    } else {
-      // Conservative AI-based router fallback: only when no explicit command matched
-      if (event.subtype !== 'bot_message') {
-        const decision = await shouldRespond(event);
-        if (decision.respond && decision.confidence >= 0.8) {
-          const query = event.text.replace(/^jeremy,?\s*/i, '');
-          getChatbot(event, query);
-        }
-      }
     }
 
     // Self awareness
