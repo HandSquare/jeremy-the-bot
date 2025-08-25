@@ -116,20 +116,16 @@ module.exports = async (event) => {
     } else if (event.thread_ts && event.subtype !== 'bot_message') {
       // Check if Jeremy has participated in this thread
       const threadHistory = messageHistory[event.channel] || [];
-      const jeremyInThread = threadHistory.some(
+      const jeremyIsThreadAuthor = threadHistory.some(
         (msg) =>
-          (msg.thread_ts === event.thread_ts &&
-            msg.subtype === 'bot_message' &&
-            (msg.user === self.id ||
-              msg.username?.toLowerCase() === self.name.toLowerCase())) ||
-          (msg.subtype === 'bot_message' &&
-            !msg.thread_ts &&
-            (msg.user === self.id ||
-              msg.username?.toLowerCase() === self.name.toLowerCase()) &&
-            threadHistory.some((m) => m.thread_ts === event.thread_ts))
+          msg.subtype === 'bot_message' &&
+          !msg.thread_ts &&
+          (msg.user === self.id ||
+            msg.username?.toLowerCase() === self.name.toLowerCase()) &&
+          threadHistory.some((m) => m.thread_ts === event.thread_ts)
       );
 
-      if (jeremyInThread) {
+      if (jeremyIsThreadAuthor) {
         getChatbot(event, event.text);
       }
     } else if (event.text.toLowerCase().includes(', pull that up')) {

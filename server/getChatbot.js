@@ -5,7 +5,8 @@ const configuration = {
 const openai = new OpenAI(configuration);
 
 const { web } = require('./slackClient');
-const { getBufferFromRequest } = require('./util');
+const { getBufferFromRequest, getUsers } = require('./util');
+const { getSelf } = require('./self');
 const messageHistory = require('./messageHistory');
 
 module.exports = async (event, query) => {
@@ -17,6 +18,15 @@ module.exports = async (event, query) => {
   });
   let response;
   try {
+    // Get user mappings for better context
+    const users = await getUsers();
+    const userHash = users.reduce((prev, curr) => {
+      prev[curr.id] = curr.name;
+      return prev;
+    }, {});
+
+    const self = getSelf();
+
     // Build channel-specific history context
     const channelHistory = (messageHistory[event.channel] || [])
       .filter((m) => !!m && typeof m.text === 'string')
@@ -25,17 +35,30 @@ module.exports = async (event, query) => {
 
     const formattedHistory = channelHistory
       .map((m) => {
-        const isBot = m.subtype === 'bot_message';
-        const author = isBot ? 'Jeremy' : m.username || m.user || 'user';
+        const isJeremy =
+          m.subtype === 'bot_message' &&
+          (m.user === self.id ||
+            m.username?.toLowerCase() === self.name.toLowerCase());
+        const author = isJeremy
+          ? 'Jeremy'
+          : userHash[m.user] || m.username || m.user || 'user';
         return `${author}: ${m.text}`;
       })
       .join('\n');
 
     const isContinuation =
       Boolean(event.thread_ts) ||
-      channelHistory.some((m) => m && m.subtype === 'bot_message');
+      channelHistory.some(
+        (m) =>
+          m &&
+          m.subtype === 'bot_message' &&
+          (m.user === self.id ||
+            m.username?.toLowerCase() === self.name.toLowerCase())
+      );
 
-    const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\nUser: ${query}\nJeremy:`;
+    const currentUserName =
+      userHash[event.user] || event.username || event.user || 'user';
+    const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\n${currentUserName}: ${query}\nJeremy:`;
 
     response = await openai.responses.create({
       model: 'gpt-5-mini',
