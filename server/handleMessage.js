@@ -70,17 +70,6 @@ module.exports = async (event) => {
   messageHistory[event.channel].unshift(event);
 
   try {
-    /*
-     * thick -> thicc
-     * if (event.text.match(/ick\b/g)) {
-     *   await web.chat.postMessage({
-     *     text: event.text.replace(/ick\b/g, 'icc'),
-     *     channel: event.channel,
-     *     thread_ts: event.ts
-     *   })
-     * }
-     * Look something up
-     */
     if (!event.text) return;
     if (event.text.match(/[W|w]hat means (.*)/)) {
       // React to the message
@@ -210,16 +199,6 @@ module.exports = async (event) => {
         thread_ts: event.thread_ts,
         // username: // getSelf().id ??
       });
-    } else if (event.text.match(/, cowsay (.*)/)) {
-      const query = event.text.match(/, cowsay (.*)/)[1];
-      await web.chat.postMessage({
-        /* eslint-disable-next-line no-useless-concat */
-        text: '```' + '\n' + cowsay.say({ text: query }) + '\n' + '```',
-        channel: event.channel,
-        as_user: true,
-        username: 'cow',
-        thread_ts: event.thread_ts,
-      });
     }
 
     // Self awareness
@@ -348,37 +327,6 @@ module.exports = async (event) => {
         as_user: false,
         thread_ts: event.thread_ts,
       });
-    }
-
-    if (event.text === 'What are the boys talking about?') {
-      // const history = messageHistory[event.channel].map((event) => event.text);
-      const users = await getUsers();
-      const userHash = users.reduce((prev, curr) => {
-        prev[curr.id] = curr.name;
-        return prev;
-      }, {});
-
-      console.log({ userHash });
-      const history = await web.conversations.history({
-        channel: event.channel,
-        limit: 25,
-      });
-      const messages = history.messages
-        .reverse()
-        .map((msg) => {
-          let user = userHash[msg.user];
-          if (user === undefined && msg.username === 'Jeremy') user = 'Jeremy';
-          return `${user}: ${msg.text}`;
-        })
-        .join('\n');
-      // console.log({history: history.messages})
-      console.log(messages);
-      getChatbot(
-        event,
-        `Jeremy, given the following chat history, tell me what the boys are talking about.
-        ${messages}
-        `
-      );
     }
 
     // This stopped working
