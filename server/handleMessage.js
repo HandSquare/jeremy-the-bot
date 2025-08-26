@@ -103,18 +103,17 @@ module.exports = async (event) => {
       const query = event.text.toLowerCase().match(/jeremy, (.*)/s)[1];
       getChatbot(event, query);
     } else if (event.thread_ts && event.subtype !== 'bot_message') {
-      // Check if Jeremy has participated in this thread
+      // Check if Jeremy is the author of the parent message that started this thread
       const threadHistory = messageHistory[event.channel] || [];
-      const jeremyIsThreadAuthor = threadHistory.some(
+      const isThreadParent = threadHistory.find(
         (msg) =>
+          msg.ts === event.thread_ts && // This is the parent message
           msg.subtype === 'bot_message' &&
-          !msg.thread_ts &&
           (msg.user === self.id ||
-            msg.username?.toLowerCase() === self.name.toLowerCase()) &&
-          threadHistory.some((m) => m.thread_ts === event.thread_ts)
+            msg.username?.toLowerCase() === self.name.toLowerCase())
       );
 
-      if (jeremyIsThreadAuthor) {
+      if (isThreadParent) {
         getChatbot(event, event.text);
       }
     } else if (event.text.toLowerCase().includes(', pull that up')) {
