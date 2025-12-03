@@ -33,7 +33,6 @@ module.exports = async (event, query) => {
       channel_id: event.channel,
       file: data,
       filename: `${query}.png`,
-      initial_comment: query,
     });
     console.log('File uploaded:', result.files);
   } catch (e) {
