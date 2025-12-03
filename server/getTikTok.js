@@ -36,10 +36,9 @@ const getTikTok = async (event) => {
 
   console.log('data', data);
 
-  web.files.upload({
-    channels: event.channel,
+  await web.filesUploadV2({
+    channel_id: event.channel,
     file: data,
-    filetype: 'mp4',
     filename: `${text}.mp4`,
   });
 };

@@ -66,12 +66,11 @@ const sendImagesScreenshot = async (event, query, firstImageOnly) => {
   }
 
   data = await page.screenshot();
-  web.files.upload({
-    channels: event.channel,
+  await web.filesUploadV2({
+    channel_id: event.channel,
     file: data,
-    filetype: 'auto',
-    text: query,
-    filename: query,
+    filename: `${query}.png`,
+    initial_comment: query,
   });
 
   browser.close();

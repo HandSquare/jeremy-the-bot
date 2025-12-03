@@ -29,13 +29,13 @@ module.exports = async (event, query) => {
     // Convert base64 to Buffer for Slack upload
     const data = Buffer.from(base64Data, 'base64');
 
-    await web.files.upload({
-      channels: event.channel,
+    const result = await web.filesUploadV2({
+      channel_id: event.channel,
       file: data,
-      filetype: 'auto',
-      text: query,
-      filename: query,
+      filename: `${query}.png`,
+      initial_comment: query,
     });
+    console.log('File uploaded:', result.files);
   } catch (e) {
     console.log('err', e);
     await web.chat.postMessage({

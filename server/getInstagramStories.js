@@ -35,11 +35,10 @@ const getStoriesOfUser = async (event, user) => {
   console.log(data);
   await browser.close();
 
-  await web.files.upload({
-    channels: event.channel,
+  await web.filesUploadV2({
+    channel_id: event.channel,
     file: data,
-    filetype: 'auto',
-    filename: query,
+    filename: `${query}.png`,
   });
 };
 

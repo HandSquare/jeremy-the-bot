@@ -18,12 +18,11 @@ const sendPageScreenshot = async (event, url, caption) => {
 
   await browser.close();
 
-  await web.files.upload({
-    channels: event.channel,
+  await web.filesUploadV2({
+    channel_id: event.channel,
     file: data,
-    filetype: 'auto',
-    text: caption,
-    filename: caption,
+    filename: `${caption}.png`,
+    initial_comment: caption,
   });
 };
 
