@@ -20,7 +20,7 @@
     "cowsay": "^1.4.0",
     "dotenv": "^16.0.1",
     "express": "^4.22.1",
-    "firebase-admin": "^11.11.1",
+    "firebase-admin": "^13.7.0",
     "openai": "^5.12.2",
     "path": "^0.12.7",
     "puppeteer": "^1.18.1",
