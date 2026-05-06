@@ -20,7 +20,7 @@ Slack bot that responds to messages with AI-generated text, images, and screensh
 ## Key Files
 
 - `server/slackClient.js` — RTM + Web client setup
-- `server/getDallEImage.js` — image generation (OpenAI `gpt-image-1.5`)
+- `server/getDallEImage.js` — image generation (OpenAI `gpt-image-2`)
 - `server/getChatbot.js` — chat responses (OpenAI `gpt-5-mini`)
 - `server/shouldRespond.js` — decides if Jeremy should reply (`gpt-5-nano`)
 - `server/describeImage.js` — image description (`gpt-4o`)
