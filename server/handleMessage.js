@@ -224,19 +224,23 @@ module.exports = async (event) => {
         }
       }
     } else if (event.text.toLowerCase().includes(', preview that link')) {
-      // React to the message
       await addReactionOnce(event.channel, event.ts, 'mag_right');
 
-      // Look up the previous message
-      const lastMessage = messageHistory[event.channel][1];
-      if (!lastMessage) return;
-
       // https://regex101.com/library/y09jwv
-      const linkMatch = lastMessage.text?.match(
-        /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/
-      );
-      if (!linkMatch) return;
-      sendPageScreenshot(lastMessage, linkMatch[1], 'preview');
+      const linkRegex =
+        /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/;
+      const channelHistory = messageHistory[event.channel] || [];
+      let foundLink = null;
+      for (let i = 1; i < channelHistory.length; i++) {
+        const text = channelHistory[i].text || channelHistory[i].message?.text;
+        const m = text?.match(linkRegex);
+        if (m) {
+          foundLink = m[1];
+          break;
+        }
+      }
+      if (!foundLink) return;
+      sendPageScreenshot(event, foundLink, 'preview');
     } else if (event.text.match(/, look up (.*)/)) {
       // React to the message
       await addReactionOnce(event.channel, event.ts, 'mag_right');
