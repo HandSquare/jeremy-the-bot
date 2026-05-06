@@ -21,6 +21,7 @@ const getTikTok = require('./getTikTok');
 const sendPageScreenshot = require('./sendPageScreenshot');
 
 const getDallEImage = require('./getDallEImage');
+const getImageEdit = require('./getImageEdit');
 const getChatbot = require('./getChatbot');
 const {
   performGoogleImageSearch,
@@ -29,6 +30,52 @@ const {
 const describeImage = require('./describeImage');
 
 let lastEvent;
+
+const messageHasImage = (msg) =>
+  msg &&
+  msg.files &&
+  msg.files.some((f) => (f.mimetype || '').startsWith('image/'));
+
+const findLastImageMessage = async (event) => {
+  const inThread = !!event.thread_ts;
+  const matchesContext = (msg) => {
+    if (inThread) {
+      return msg.thread_ts === event.thread_ts || msg.ts === event.thread_ts;
+    }
+    return !msg.thread_ts;
+  };
+
+  const local = (messageHistory[event.channel] || []).find(
+    (m) => matchesContext(m) && messageHasImage(m)
+  );
+  if (local) return local;
+
+  try {
+    if (inThread) {
+      const result = await web.conversations.replies({
+        channel: event.channel,
+        ts: event.thread_ts,
+        limit: 50,
+      });
+      const messages = result.messages || [];
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messageHasImage(messages[i])) return messages[i];
+      }
+    } else {
+      const result = await web.conversations.history({
+        channel: event.channel,
+        limit: 50,
+      });
+      const messages = result.messages || [];
+      for (const msg of messages) {
+        if (!msg.thread_ts && messageHasImage(msg)) return msg;
+      }
+    }
+  } catch (e) {
+    console.log('findLastImageMessage fetch error', e.message);
+  }
+  return null;
+};
 
 at('18:30', async () => {
   const atWork = await getCurrentAtWork();
@@ -54,13 +101,20 @@ at('16:20', async () => {
   }
 });
 
+const MAX_TRACKED_CHANNELS = 100;
+const MAX_MESSAGES_PER_CHANNEL = 10;
+
 module.exports = async (event) => {
   const self = getSelf();
 
   if (!messageHistory[event.channel]) {
+    const channels = Object.keys(messageHistory);
+    if (channels.length >= MAX_TRACKED_CHANNELS) {
+      delete messageHistory[channels[0]];
+    }
     messageHistory[event.channel] = [];
   }
-  if (messageHistory[event.channel].length > 10) {
+  if (messageHistory[event.channel].length >= MAX_MESSAGES_PER_CHANNEL) {
     messageHistory[event.channel].pop();
   }
 
@@ -95,7 +149,23 @@ module.exports = async (event) => {
       getDallEImage(lastMessage, lastMessage.text);
     } else if (event.text.match(/, generate (.*)/)) {
       const query = event.text.match(/, generate (.*)/)[1];
-      getDallEImage(event, query);
+      if (messageHasImage(event)) {
+        getImageEdit(event, event, query);
+      } else {
+        getDallEImage(event, query);
+      }
+    } else if (event.text.match(/, edit (.*)/i)) {
+      const userPrompt = event.text.match(/, edit (.*)/i)[1];
+      const sourceMessage = await findLastImageMessage(event);
+      if (!sourceMessage) {
+        await web.chat.postMessage({
+          text: "i don't see an image to edit",
+          channel: event.channel,
+          thread_ts: event.thread_ts,
+        });
+        return;
+      }
+      getImageEdit(event, sourceMessage, `edit ${userPrompt}`);
     } else if (
       event.text.toLowerCase().match(/jeremy, (.*)/) &&
       event.subtype !== 'bot_message'
@@ -125,15 +195,7 @@ module.exports = async (event) => {
       await addReactionOnce(event.channel, event.ts, 'eyes');
       const query = lastMessage.text;
       performGoogleImageSearch(event, query);
-    } else if (
-      event.text.match(/[W|w]hat[\'|\’]?s that/) &&
-      event.text.match(/[W|w]hat[\'|\’]?s that/).length
-    ) {
-      // Look up the previous message
-      const lastMessage = messageHistory[event.channel][1];
-      if (!lastMessage) return;
-
-      // React to the message
+    } else if (event.text.match(/[Ww]hat[\'’]?s that/)) {
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
@@ -141,18 +203,25 @@ module.exports = async (event) => {
         thread_ts: event.ts,
       });
 
-      const file = lastMessage.files ? lastMessage.files[0] : null;
-      const url = extractImgUrl(lastMessage?.text || lastMessage.message?.text);
-      if (file) {
-        describeImage(event, file);
-      } else if (url) {
-        describeImage(event, undefined, url);
+      const sourceMessage = await findLastImageMessage(event);
+      if (sourceMessage) {
+        const imageFile = sourceMessage.files.find((f) =>
+          (f.mimetype || '').startsWith('image/')
+        );
+        describeImage(event, imageFile);
       } else {
-        const query = stopword
-          .removeStopwords(lastMessage.text.split(' '))
-          .join(' ');
-
-        await sendImagesScreenshot(event, query);
+        const lastMessage = messageHistory[event.channel][1];
+        const url = extractImgUrl(
+          lastMessage?.text || lastMessage?.message?.text
+        );
+        if (url) {
+          describeImage(event, undefined, url);
+        } else if (lastMessage?.text) {
+          const query = stopword
+            .removeStopwords(lastMessage.text.split(' '))
+            .join(' ');
+          await sendImagesScreenshot(event, query);
+        }
       }
     } else if (event.text.toLowerCase().includes(', preview that link')) {
       // React to the message
@@ -163,24 +232,21 @@ module.exports = async (event) => {
       if (!lastMessage) return;
 
       // https://regex101.com/library/y09jwv
-      const link = lastMessage.text.match(
+      const linkMatch = lastMessage.text?.match(
         /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/
-      )[1];
-      sendPageScreenshot(lastMessage, link, 'preview');
+      );
+      if (!linkMatch) return;
+      sendPageScreenshot(lastMessage, linkMatch[1], 'preview');
     } else if (event.text.match(/, look up (.*)/)) {
       // React to the message
       await addReactionOnce(event.channel, event.ts, 'mag_right');
       const query = event.text.match(/, look up (.*)/)[1];
       await performGoogleTextSearch(event, query);
-    } else if (event.text.match(/[E|e]nhance/)) {
-      // React to the message
-      const lastFile = messageHistory[event.channel].find(
-        (message) => message.files
-      );
-      if (!lastFile) return;
+    } else if (event.text.match(/[Ee]nhance/)) {
+      const sourceMessage = await findLastImageMessage(event);
+      if (!sourceMessage) return;
       await addReactionOnce(event.channel, event.ts, 'eyes');
-      const query = lastFile.files.pop().name;
-      performGoogleImageSearch(event, query);
+      getImageEdit(event, sourceMessage, 'zoom in on the center of the image');
     } else if (
       // last message exists
       messageHistory[event.channel][1] &&

@@ -25,7 +25,10 @@ const boot = async () => {
 };
 
 // Boot immediately
-boot();
+boot().catch((err) => {
+  console.error('boot failed', err);
+  process.exit(1);
+});
 
 // Start firebase
 startStore();
