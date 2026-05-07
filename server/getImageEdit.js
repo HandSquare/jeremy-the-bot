@@ -3,6 +3,7 @@ const OpenAI = require('openai');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const { web } = require('./slackClient');
+const generateSlug = require('./generateSlug');
 
 const downloadSlackFile = async (file) => {
   const link = file.url_private_download || file.url_private;
@@ -42,14 +43,17 @@ module.exports = async (event, sourceMessage, prompt) => {
       })
     );
 
-    const response = await openai.images.edit({
-      model: 'gpt-image-2',
-      image: images.length === 1 ? images[0] : images,
-      prompt,
-      n: 1,
-      size: '1024x1024',
-      quality: 'medium',
-    });
+    const [response, slug] = await Promise.all([
+      openai.images.edit({
+        model: 'gpt-image-2',
+        image: images.length === 1 ? images[0] : images,
+        prompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'medium',
+      }),
+      generateSlug(prompt),
+    ]);
 
     const base64Data = response.data[0].b64_json;
     const data = Buffer.from(base64Data, 'base64');
@@ -57,7 +61,7 @@ module.exports = async (event, sourceMessage, prompt) => {
     const result = await web.filesUploadV2({
       channel_id: event.channel,
       file: data,
-      filename: `${prompt}.png`,
+      filename: `${slug}.png`,
     });
     console.log('Edited image uploaded:', result.files);
   } catch (e) {

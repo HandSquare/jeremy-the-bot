@@ -6,6 +6,7 @@ const openai = new OpenAI(configuration);
 
 const { web } = require('./slackClient');
 const { getBufferFromRequest } = require('./util');
+const generateSlug = require('./generateSlug');
 
 module.exports = async (event, query) => {
   await web.reactions.add({
@@ -13,26 +14,25 @@ module.exports = async (event, query) => {
     timestamp: event.ts,
     name: 'artist',
   });
-  let response;
   try {
-    response = await openai.images.generate({
-      model: 'gpt-image-2',
-      prompt: query,
-      n: 1,
-      size: '1024x1024',
-      quality: 'medium',
-    });
+    const [response, slug] = await Promise.all([
+      openai.images.generate({
+        model: 'gpt-image-2',
+        prompt: query,
+        n: 1,
+        size: '1024x1024',
+        quality: 'medium',
+      }),
+      generateSlug(query),
+    ]);
 
-    // The API now returns base64 data instead of URL
     const base64Data = response.data[0].b64_json;
-
-    // Convert base64 to Buffer for Slack upload
     const data = Buffer.from(base64Data, 'base64');
 
     const result = await web.filesUploadV2({
       channel_id: event.channel,
       file: data,
-      filename: `${query}.png`,
+      filename: `${slug}.png`,
     });
     console.log('File uploaded:', result.files);
   } catch (e) {
