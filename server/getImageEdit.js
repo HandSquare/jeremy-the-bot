@@ -14,7 +14,7 @@ const downloadSlackFile = async (file) => {
   return Buffer.from(resp.data);
 };
 
-module.exports = async (event, sourceMessage, prompt) => {
+module.exports = async (event, sourceMessage, prompt, slugInput = prompt) => {
   await web.reactions.add({
     channel: event.channel,
     timestamp: event.ts,
@@ -52,7 +52,7 @@ module.exports = async (event, sourceMessage, prompt) => {
         size: '1024x1024',
         quality: 'medium',
       }),
-      generateSlug(prompt),
+      generateSlug(slugInput),
     ]);
 
     const base64Data = response.data[0].b64_json;

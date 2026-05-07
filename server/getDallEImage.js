@@ -8,7 +8,7 @@ const { web } = require('./slackClient');
 const { getBufferFromRequest } = require('./util');
 const generateSlug = require('./generateSlug');
 
-module.exports = async (event, query) => {
+module.exports = async (event, query, slugInput = query) => {
   await web.reactions.add({
     channel: event.channel,
     timestamp: event.ts,
@@ -23,7 +23,7 @@ module.exports = async (event, query) => {
         size: '1024x1024',
         quality: 'medium',
       }),
-      generateSlug(query),
+      generateSlug(slugInput),
     ]);
 
     const base64Data = response.data[0].b64_json;

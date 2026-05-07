@@ -162,16 +162,21 @@ const COMMANDS = [
     handle: async (event) => {
       const lastMessage = await findLastTextMessage(event);
       if (!lastMessage) return;
-      getDallEImage(event, people.substitute(lastMessage.text));
+      getDallEImage(
+        event,
+        people.substitute(lastMessage.text),
+        lastMessage.text
+      );
     },
   },
   {
     name: 'generate',
     match: (event) => event.text.match(/, generate (.*)/),
     handle: (event, m) => {
-      const prompt = people.substitute(m[1]);
-      if (messageHasImage(event)) getImageEdit(event, event, prompt);
-      else getDallEImage(event, prompt);
+      const original = m[1];
+      const prompt = people.substitute(original);
+      if (messageHasImage(event)) getImageEdit(event, event, prompt, original);
+      else getDallEImage(event, prompt, original);
     },
   },
   {
@@ -187,7 +192,13 @@ const COMMANDS = [
         });
         return;
       }
-      getImageEdit(event, sourceMessage, `edit ${people.substitute(m[1])}`);
+      const original = m[1];
+      getImageEdit(
+        event,
+        sourceMessage,
+        `edit ${people.substitute(original)}`,
+        original
+      );
     },
   },
   {
@@ -202,7 +213,7 @@ const COMMANDS = [
         channel: event.channel,
         thread_ts: event.thread_ts,
       });
-      getDallEImage(event, `a portrait of ${description}`);
+      getDallEImage(event, `a portrait of ${description}`, name);
     },
   },
   {
@@ -303,7 +314,12 @@ const COMMANDS = [
       const sourceMessage = await findLastImageMessage(event);
       if (!sourceMessage) return;
       await addReactionOnce(event.channel, event.ts, 'eyes');
-      getImageEdit(event, sourceMessage, 'zoom in on the center of the image');
+      getImageEdit(
+        event,
+        sourceMessage,
+        'zoom in on the center of the image',
+        'enhance'
+      );
     },
   },
   {
