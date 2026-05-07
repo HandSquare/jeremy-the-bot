@@ -183,7 +183,9 @@ const COMMANDS = [
     name: 'edit',
     match: (event) => event.text.match(/, edit (.*)/i),
     handle: async (event, m) => {
-      const sourceMessage = await findLastImageMessage(event);
+      const sourceMessage = messageHasImage(event)
+        ? event
+        : await findLastImageMessage(event);
       if (!sourceMessage) {
         await web.chat.postMessage({
           text: "i don't see an image to edit",
@@ -256,16 +258,23 @@ const COMMANDS = [
     },
   },
   {
-    name: 'whats-that',
-    match: (event) => event.text.match(/[Ww]hat[\'’]?s that/),
-    handle: async (event) => {
+    name: 'whats-this-or-that',
+    match: (event) => event.text.match(/[Ww]hat[\'’]?s (this|that)/),
+    handle: async (event, m) => {
+      const isThis = m[1].toLowerCase() === 'this';
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
         name: 'eyes',
         thread_ts: event.ts,
       });
-      const sourceMessage = await findLastImageMessage(event);
+      // "what's this" → image must be attached to this message.
+      // "what's that" → look at prior messages (thread-aware).
+      const sourceMessage = isThis
+        ? messageHasImage(event)
+          ? event
+          : null
+        : await findLastImageMessage(event);
       if (sourceMessage) {
         const imageFile = sourceMessage.files.find((f) =>
           (f.mimetype || '').startsWith('image/')
