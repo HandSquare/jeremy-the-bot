@@ -111,6 +111,12 @@ const messageLink = (msg) => {
 const findLastLinkMessage = (event) =>
   findLastMessageMatching(event, (msg) => !!messageLink(msg));
 
+const findLastTextMessage = (event) =>
+  findLastMessageMatching(
+    event,
+    (msg) => typeof msg.text === 'string' && !!msg.text
+  );
+
 at('18:30', async () => {
   const atWork = await getCurrentAtWork();
   if (atWork > 0) {
@@ -184,10 +190,9 @@ module.exports = async (event) => {
       const query = event.text.match(/, pull up (.*)/)[1];
       performGoogleImageSearch(event, query);
     } else if (event.text.toLowerCase().includes(', generate that')) {
-      // Look up the previous message
-      const lastMessage = messageHistory[event.channel][1];
+      const lastMessage = await findLastTextMessage(event);
       if (!lastMessage) return;
-      getDallEImage(lastMessage, lastMessage.text);
+      getDallEImage(event, lastMessage.text);
     } else if (event.text.match(/, generate (.*)/)) {
       const query = event.text.match(/, generate (.*)/)[1];
       if (messageHasImage(event)) {
@@ -228,14 +233,10 @@ module.exports = async (event) => {
         getChatbot(event, event.text);
       }
     } else if (event.text.toLowerCase().includes(', pull that up')) {
-      // Look up the previous message
-      const lastMessage = messageHistory[event.channel][1];
+      const lastMessage = await findLastTextMessage(event);
       if (!lastMessage) return;
-
-      // React to the message
       await addReactionOnce(event.channel, event.ts, 'eyes');
-      const query = lastMessage.text;
-      performGoogleImageSearch(event, query);
+      performGoogleImageSearch(event, lastMessage.text);
     } else if (event.text.match(/[Ww]hat[\'’]?s that/)) {
       await web.reactions.add({
         channel: event.channel,
@@ -251,7 +252,7 @@ module.exports = async (event) => {
         );
         describeImage(event, imageFile);
       } else {
-        const lastMessage = messageHistory[event.channel][1];
+        const lastMessage = await findLastTextMessage(event);
         const url = extractImgUrl(
           lastMessage?.text || lastMessage?.message?.text
         );
