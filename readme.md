@@ -14,10 +14,39 @@ Most commands are triggered by a leading comma in the message (e.g. `, generate 
 ### Images
 
 - `, generate <prompt>` — generate an image with `gpt-image-2`. If you attach an image to the same message, edits that image instead.
-- `, edit <prompt>` — edit the most recent image in the channel or thread (thread-aware lookup; falls back to fetching channel/thread history if not in local memory).
+- `, edit <prompt>` — edit the most recent image in the channel or thread, or an image attached to the same message (thread-aware lookup; falls back to fetching channel/thread history if not in local memory).
 - `, enhance` — zoom into the center of the most recent image. (RIP CSI joke.)
-- `what's that` — describe the most recent image with `gpt-4o`. Falls back to a Google image search of the previous message text if there's no image.
+- `what's this` — describe an image attached to the same message.
+- `what's that` — describe the most recent image in the thread (or channel). Falls back to a Google image search of the previous message text if there's no image.
 - `, generate that` — generate using the previous message's text as the prompt.
+
+Filenames are auto-summarized to a short slug via `gpt-5-nano` so Slack doesn't truncate long prompts.
+
+### People dictionary
+
+Define aliases that get substituted into image prompts and injected into chat context. Useful for memes of each other.
+
+- `, define "Nick" "a half-chinese artsy web developer"` — saves the alias and sends a portrait of the description back as a sanity-check.
+- `, who is Nick` — read the description back.
+- `, forget Nick` — delete.
+
+When a known alias appears in a `, generate` / `, edit` prompt, Jeremy prepends a `CHARACTERS:` preamble so the image model has an explicit cast list:
+
+```
+CHARACTERS: Nick = a half-chinese artsy web developer, Bob = a tall musician.
+
+Nick and Bob having dinner.
+```
+
+The dictionary is also injected as system context for the chatbot, so Jeremy can reference people naturally in conversation.
+
+### Auto-downloads
+
+Posting any of these URLs in a message auto-downloads the video via `yt-dlp` and re-uploads it to the channel:
+
+- Instagram reels and posts (`instagram.com/reel/...`, `instagram.com/p/...`)
+- TikTok videos (full and short links)
+- X / Twitter status URLs
 
 ### Search
 
@@ -42,10 +71,14 @@ Most commands are triggered by a leading comma in the message (e.g. `, generate 
 - 6:30 PM ET — auto-clears the at-work list.
 - 4:20 PM ET — Jeremy makes a joke if there's been recent activity.
 
+## Architecture
+
+Routing lives in `server/commands.js` as a flat `COMMANDS` array of `{name, match, handle}` entries. First match wins, then ambient behaviors (waves, greetings, emoji reactions) run unless the command sets `skipsAmbient`.
+
 ## State
 
 - Per-channel message history (last 10 messages) persists in Firestore between restarts. DMs are skipped — they stay in-memory only and are never written to disk.
-- `at_work` membership is also stored in Firestore.
+- `at_work` membership and the people dictionary are also stored in Firestore (`main/state`).
 
 ## Current Status
 
