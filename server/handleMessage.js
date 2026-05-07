@@ -23,6 +23,7 @@ const sendPageScreenshot = require('./sendPageScreenshot');
 
 const getDallEImage = require('./getDallEImage');
 const getImageEdit = require('./getImageEdit');
+const getVideo = require('./getVideo');
 const getChatbot = require('./getChatbot');
 const {
   performGoogleImageSearch,
@@ -36,6 +37,22 @@ const messageHasImage = (msg) =>
   msg &&
   msg.files &&
   msg.files.some((f) => (f.mimetype || '').startsWith('image/'));
+
+const VIDEO_URL_PATTERNS = [
+  /instagram\.com\/(?:reel|reels|p)\/[\w-]+/i,
+  /(?:vm|vt|www|m)?\.?tiktok\.com\//i,
+  /(?:x|twitter)\.com\/[^/]+\/status\/\d+/i,
+];
+
+const findVideoUrl = (text) => {
+  if (!text) return null;
+  const matches = [...text.matchAll(/<(https?:\/\/[^>|]+)(?:\|[^>]*)?>/g)];
+  for (const m of matches) {
+    const url = m[1];
+    if (VIDEO_URL_PATTERNS.some((p) => p.test(url))) return url;
+  }
+  return null;
+};
 
 const findLastMessageMatching = async (event, predicate) => {
   const inThread = !!event.thread_ts;
@@ -143,6 +160,12 @@ module.exports = async (event) => {
 
   try {
     if (!event.text) return;
+    const videoUrl = findVideoUrl(event.text);
+    if (videoUrl && event.subtype !== 'bot_message') {
+      getVideo(event, videoUrl);
+      return;
+    }
+
     if (event.text.match(/[W|w]hat means (.*)/)) {
       // React to the message
       await addReactionOnce(event.channel, event.ts, 'eyes');
