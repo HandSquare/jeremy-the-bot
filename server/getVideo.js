@@ -30,6 +30,14 @@ const downloadWithYtDlp = (url, outPath) =>
     });
   });
 
+const RATE_LIMIT_RETRY_MS = 30_000;
+const isRateLimitError = (err) =>
+  /rate-limit|rate limit|429|too many requests|login required/i.test(
+    err.message || ''
+  );
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 module.exports = async (event, url) => {
   await addReactionOnce(event.channel, event.ts, 'eyes');
 
@@ -37,7 +45,14 @@ module.exports = async (event, url) => {
   const outPath = path.join(os.tmpdir(), `${id}.mp4`);
 
   try {
-    await downloadWithYtDlp(url, outPath);
+    try {
+      await downloadWithYtDlp(url, outPath);
+    } catch (e) {
+      if (!isRateLimitError(e)) throw e;
+      console.log('getVideo rate-limited, retrying in 30s:', e.message);
+      await sleep(RATE_LIMIT_RETRY_MS);
+      await downloadWithYtDlp(url, outPath);
+    }
     const buffer = fs.readFileSync(outPath);
     await web.filesUploadV2({
       channel_id: event.channel,
