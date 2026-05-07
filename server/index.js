@@ -10,6 +10,7 @@ const handleReaction = require('./handleReaction');
 const { setSelf } = require('./self');
 const { startStore } = require('./db');
 const { init: initMessageHistory } = require('./messageHistoryPersistence');
+const { init: initPeople } = require('./people');
 const { startTimer } = require('./timer');
 
 rtm.on('reaction_added', handleReaction);
@@ -22,6 +23,7 @@ app.listen(process.env.PORT);
 const boot = async () => {
   await startStore();
   await initMessageHistory();
+  await initPeople();
   const { self, team } = await rtm.start();
   gatherEmoji();
   setSelf(self);

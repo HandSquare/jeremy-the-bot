@@ -8,6 +8,7 @@ const { web } = require('./slackClient');
 const { getBufferFromRequest, getUsers } = require('./util');
 const { getSelf } = require('./self');
 const messageHistory = require('./messageHistory');
+const people = require('./people');
 
 module.exports = async (event, query) => {
   console.log({ event });
@@ -60,13 +61,23 @@ module.exports = async (event, query) => {
       userHash[event.user] || event.username || event.user || 'user';
     const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\n${currentUserName}: ${query}\nJeremy:`;
 
+    const peopleDict = people.all();
+    const peopleContext = Object.keys(peopleDict).length
+      ? '\n\nPeople you know: ' +
+        Object.entries(peopleDict)
+          .map(([n, d]) => `${n} is ${d}`)
+          .join('; ') +
+        '.'
+      : '';
+
     response = await openai.responses.create({
       model: 'gpt-5-mini',
       instructions:
         'You are Jeremy. You are a helpful assistant. You are just a regular guy and often respond with stupid puns.' +
         (isContinuation
           ? ' This is a continuation of an ongoing conversation. Do not greet, do not reintroduce yourself, and do not restate your name. '
-          : ' If appropriate, you may briefly remind people that your name is Jeremy.'),
+          : ' If appropriate, you may briefly remind people that your name is Jeremy.') +
+        peopleContext,
       input: prompt,
     });
     console.log(response);

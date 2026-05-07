@@ -2,120 +2,15 @@ const stopword = require('stopword');
 const { getSelf } = require('./self');
 const messageHistory = require('./messageHistory');
 const { markDirty } = require('./messageHistoryPersistence');
-const sendImagesScreenshot = require('./sendImagesScreenshot');
-const {
-  delay,
-  getCurrentAtWork,
-  getUsersCurrentlyAtWork,
-  makeNiceListFromArray,
-  getBufferFromRequest,
-  getUsers,
-  extractImgUrl,
-} = require('./util');
-const { web, rtm } = require('./slackClient');
+const { delay, getCurrentAtWork } = require('./util');
+const { web } = require('./slackClient');
 const { getEmojiList } = require('./emojiList');
 const { addReactionOnce } = require('./reactionUtils');
-const cowsay = require('cowsay');
-const { updateState, getState, getStateValue } = require('./db');
+const { updateState } = require('./db');
 const { at, getSecondsToSlackTimestamp } = require('./timer');
-const getTikTok = require('./getTikTok');
-const sendPageScreenshot = require('./sendPageScreenshot');
-
-const getDallEImage = require('./getDallEImage');
-const getImageEdit = require('./getImageEdit');
-const getVideo = require('./getVideo');
-const getChatbot = require('./getChatbot');
-const {
-  performGoogleImageSearch,
-  performGoogleTextSearch,
-} = require('./performGoogleSearch');
-const describeImage = require('./describeImage');
+const { runCommand } = require('./commands');
 
 let lastEvent;
-
-const messageHasImage = (msg) =>
-  msg &&
-  msg.files &&
-  msg.files.some((f) => (f.mimetype || '').startsWith('image/'));
-
-const VIDEO_URL_PATTERNS = [
-  /instagram\.com\/(?:reel|reels|p)\/[\w-]+/i,
-  /(?:vm|vt|www|m)?\.?tiktok\.com\//i,
-  /(?:x|twitter)\.com\/[^/]+\/status\/\d+/i,
-];
-
-const findVideoUrl = (text) => {
-  if (!text) return null;
-  const matches = [...text.matchAll(/<(https?:\/\/[^>|]+)(?:\|[^>]*)?>/g)];
-  for (const m of matches) {
-    const url = m[1];
-    if (VIDEO_URL_PATTERNS.some((p) => p.test(url))) return url;
-  }
-  return null;
-};
-
-const findLastMessageMatching = async (event, predicate) => {
-  const inThread = !!event.thread_ts;
-  const matchesContext = (msg) => {
-    if (inThread) {
-      return msg.thread_ts === event.thread_ts || msg.ts === event.thread_ts;
-    }
-    return !msg.thread_ts;
-  };
-
-  const local = (messageHistory[event.channel] || []).find(
-    (m) => m.ts !== event.ts && matchesContext(m) && predicate(m)
-  );
-  if (local) return local;
-
-  try {
-    if (inThread) {
-      const result = await web.conversations.replies({
-        channel: event.channel,
-        ts: event.thread_ts,
-        limit: 50,
-      });
-      const messages = result.messages || [];
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].ts !== event.ts && predicate(messages[i]))
-          return messages[i];
-      }
-    } else {
-      const result = await web.conversations.history({
-        channel: event.channel,
-        limit: 50,
-      });
-      const messages = result.messages || [];
-      for (const msg of messages) {
-        if (msg.ts !== event.ts && !msg.thread_ts && predicate(msg)) return msg;
-      }
-    }
-  } catch (e) {
-    console.log('findLastMessageMatching fetch error', e.message);
-  }
-  return null;
-};
-
-const findLastImageMessage = (event) =>
-  findLastMessageMatching(event, messageHasImage);
-
-const LINK_REGEX =
-  /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/;
-
-const messageLink = (msg) => {
-  const text = msg.text || msg.message?.text;
-  const m = text?.match(LINK_REGEX);
-  return m ? m[1] : null;
-};
-
-const findLastLinkMessage = (event) =>
-  findLastMessageMatching(event, (msg) => !!messageLink(msg));
-
-const findLastTextMessage = (event) =>
-  findLastMessageMatching(
-    event,
-    (msg) => typeof msg.text === 'string' && !!msg.text
-  );
 
 at('18:30', async () => {
   const atWork = await getCurrentAtWork();
@@ -131,8 +26,7 @@ at('18:30', async () => {
 
 at('16:20', async () => {
   if (lastEvent) {
-    const time = lastEvent.ts;
-    if (getSecondsToSlackTimestamp(time) < 60 * 5) {
+    if (getSecondsToSlackTimestamp(lastEvent.ts) < 60 * 5) {
       web.chat.postMessage({
         text: 'Haha four twenty blaze it',
         channel: lastEvent.channel,
@@ -144,9 +38,7 @@ at('16:20', async () => {
 const MAX_TRACKED_CHANNELS = 100;
 const MAX_MESSAGES_PER_CHANNEL = 10;
 
-module.exports = async (event) => {
-  const self = getSelf();
-
+const trackMessage = (event) => {
   if (!messageHistory[event.channel]) {
     const channels = Object.keys(messageHistory);
     if (channels.length >= MAX_TRACKED_CHANNELS) {
@@ -157,287 +49,92 @@ module.exports = async (event) => {
   if (messageHistory[event.channel].length >= MAX_MESSAGES_PER_CHANNEL) {
     messageHistory[event.channel].pop();
   }
-
-  lastEvent = event;
-
-  // Add message to queue
   messageHistory[event.channel].unshift(event);
   markDirty(event.channel);
+};
 
-  try {
-    if (!event.text) return;
-    const videoUrl = findVideoUrl(event.text);
-    if (videoUrl && event.subtype !== 'bot_message') {
-      getVideo(event, videoUrl);
-      return;
-    }
+const pickRandom = (options) =>
+  options[Math.floor(Math.random() * options.length)];
 
-    if (event.text.match(/[W|w]hat means (.*)/)) {
-      // React to the message
-      await addReactionOnce(event.channel, event.ts, 'eyes');
-      const query = event.text.match(/[W|w]hat means (.*)/)[1];
-      await sendImagesScreenshot(event, query);
-    } else if (event.text.match(/, pull up (.*) or (.*)/)) {
-      // React to the message
-      await addReactionOnce(event.channel, event.ts, 'eyes');
-      await addReactionOnce(event.channel, event.ts, 'game_die');
-      const match = Math.random() > 0.5 ? 1 : 2;
-      const query = event.text.match(/, pull up (.*) or (.*)/);
-      performGoogleImageSearch(event, query[match]);
-    } else if (event.text.match(/, pull up (.*)/)) {
-      // React to the message
-      await addReactionOnce(event.channel, event.ts, 'eyes');
-      const query = event.text.match(/, pull up (.*)/)[1];
-      performGoogleImageSearch(event, query);
-    } else if (event.text.toLowerCase().includes(', generate that')) {
-      const lastMessage = await findLastTextMessage(event);
-      if (!lastMessage) return;
-      getDallEImage(event, lastMessage.text);
-    } else if (event.text.match(/, generate (.*)/)) {
-      const query = event.text.match(/, generate (.*)/)[1];
-      if (messageHasImage(event)) {
-        getImageEdit(event, event, query);
-      } else {
-        getDallEImage(event, query);
-      }
-    } else if (event.text.match(/, edit (.*)/i)) {
-      const userPrompt = event.text.match(/, edit (.*)/i)[1];
-      const sourceMessage = await findLastImageMessage(event);
-      if (!sourceMessage) {
-        await web.chat.postMessage({
-          text: "i don't see an image to edit",
-          channel: event.channel,
-          thread_ts: event.thread_ts,
-        });
-        return;
-      }
-      getImageEdit(event, sourceMessage, `edit ${userPrompt}`);
-    } else if (
-      event.text.toLowerCase().match(/jeremy, (.*)/) &&
-      event.subtype !== 'bot_message'
-    ) {
-      const query = event.text.toLowerCase().match(/jeremy, (.*)/s)[1];
-      getChatbot(event, query);
-    } else if (event.thread_ts && event.subtype !== 'bot_message') {
-      // Check if Jeremy is the author of the parent message that started this thread
-      const threadHistory = messageHistory[event.channel] || [];
-      const isThreadParent = threadHistory.find(
-        (msg) =>
-          msg.ts === event.thread_ts && // This is the parent message
-          msg.subtype === 'bot_message' &&
-          (msg.user === self.id ||
-            msg.username?.toLowerCase() === self.name.toLowerCase())
-      );
+// Ambient behaviors run regardless of which command (if any) matched.
+// Only commands marked `skipsAmbient` short-circuit them.
+const runAmbient = async (event) => {
+  const self = getSelf();
+  const channelHistory = messageHistory[event.channel] || [];
 
-      if (isThreadParent) {
-        getChatbot(event, event.text);
-      }
-    } else if (event.text.toLowerCase().includes(', pull that up')) {
-      const lastMessage = await findLastTextMessage(event);
-      if (!lastMessage) return;
-      await addReactionOnce(event.channel, event.ts, 'eyes');
-      performGoogleImageSearch(event, lastMessage.text);
-    } else if (event.text.match(/[Ww]hat[\'’]?s that/)) {
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-        thread_ts: event.ts,
-      });
+  // Wave when addressed
+  if (event.text.match(/[j|J]eremy/) || event.text.includes(self.id)) {
+    await addReactionOnce(event.channel, event.ts, 'wave');
+  }
 
-      const sourceMessage = await findLastImageMessage(event);
-      if (sourceMessage) {
-        const imageFile = sourceMessage.files.find((f) =>
-          (f.mimetype || '').startsWith('image/')
-        );
-        describeImage(event, imageFile);
-      } else {
-        const lastMessage = await findLastTextMessage(event);
-        const url = extractImgUrl(
-          lastMessage?.text || lastMessage?.message?.text
-        );
-        if (url) {
-          describeImage(event, undefined, url);
-        } else if (lastMessage?.text) {
-          const query = stopword
-            .removeStopwords(lastMessage.text.split(' '))
-            .join(' ');
-          await sendImagesScreenshot(event, query);
-        }
-      }
-    } else if (event.text.toLowerCase().includes(', preview that link')) {
-      await addReactionOnce(event.channel, event.ts, 'mag_right');
+  // Greeting reply
+  if (event.text.match(/[H|h][i|ello] [j|J]eremy/)) {
+    await delay(1000);
+    await web.chat.postMessage({
+      text: pickRandom(['Hey!', 'Hello.', "What's up dude?"]),
+      channel: event.channel,
+      as_user: false,
+      thread_ts: event.thread_ts,
+    });
+  }
 
-      const sourceMessage = await findLastLinkMessage(event);
-      const link = sourceMessage && messageLink(sourceMessage);
-      if (!link) return;
-      sendPageScreenshot(event, link, 'preview');
-    } else if (event.text.match(/, look up (.*)/)) {
-      // React to the message
-      await addReactionOnce(event.channel, event.ts, 'mag_right');
-      const query = event.text.match(/, look up (.*)/)[1];
-      await performGoogleTextSearch(event, query);
-    } else if (event.text.match(/[Ee]nhance/)) {
-      const sourceMessage = await findLastImageMessage(event);
-      if (!sourceMessage) return;
-      await addReactionOnce(event.channel, event.ts, 'eyes');
-      getImageEdit(event, sourceMessage, 'zoom in on the center of the image');
-    } else if (
-      // last message exists
-      messageHistory[event.channel][1] &&
-      // double check last and this message are not from jeremy
-      messageHistory[event.channel][1].subtype !== 'bot_message' &&
-      event.subtype !== 'bot_message' &&
-      // this message is a subsection of the last message
-      messageHistory[event.channel][1].text &&
-      messageHistory[event.channel][1].text.includes(event.text)
-    ) {
-      await web.chat.postMessage({
-        text: event.text,
-        channel: event.channel,
-        as_user: false,
-        thread_ts: event.thread_ts,
-        // username: // getSelf().id ??
-      });
-    }
-
-    // Self awareness
-    if (event.text.match(/[j|J]eremy/) || event.text.includes(self.id)) {
-      await addReactionOnce(event.channel, event.ts, 'wave');
-    }
-
-    // Reply to a greeting
-    if (event.text.match(/[H|h][i|ello] [j|J]eremy/)) {
-      let options = ['Hey!', 'Hello.', "What's up dude?"];
-      let text = options[Math.floor(Math.random() * options.length)];
-      await delay(1000);
-      await web.chat.postMessage({
-        text: text,
-        channel: event.channel,
-        as_user: false,
-        thread_ts: event.thread_ts,
-      });
-    }
-
-    // Respond to "thanks" if someone says it to Jeremy
-    if (
-      (event.text.match(/[t|T]hanks/) || event.text.match(/[n|N]ice/)) &&
-      !event.text.match(/[n|N]o/) &&
-      messageHistory[event.channel][1] &&
-      (messageHistory[event.channel][1].username === self.name ||
-        messageHistory[event.channel][1].user === self.id)
-    ) {
-      let options = [
+  // Thanks/nice reply if the previous message was Jeremy's
+  const prev = channelHistory[1];
+  if (
+    (event.text.match(/[t|T]hanks/) || event.text.match(/[n|N]ice/)) &&
+    !event.text.match(/[n|N]o/) &&
+    prev &&
+    (prev.username === self.name || prev.user === self.id)
+  ) {
+    await delay(1000);
+    await web.chat.postMessage({
+      text: pickRandom([
         'no worries',
         'any time',
         "you're welcome!",
         'sure thing my dude',
         'yeah!',
-      ];
-      let text = options[Math.floor(Math.random() * options.length)];
-      await delay(1000);
-      await web.chat.postMessage({
-        text: text,
-        channel: event.channel,
-        as_user: false,
-        thread_ts: event.thread_ts,
-        // username: // how can we determine jeremy's username, rather than his bot name?
-      });
-    }
+      ]),
+      channel: event.channel,
+      as_user: false,
+      thread_ts: event.thread_ts,
+    });
+  }
 
-    if (event.text === 'respond_jerm' || event.text === 'jeremy me boy') {
-      let options = ['hey', 'hello', 'hi there!', 'hey daddy'];
-      let text = options[Math.floor(Math.random() * options.length)];
-      await delay(1000);
-      await web.chat.postMessage({
-        text: text,
-        channel: event.channel,
-        as_user: false,
-        thread_ts: event.thread_ts,
-        // username: getSelf().id doesn't work? or does it?
-      });
-    }
-
-    // React to a message if it contains a word matching an emoji
-    const emojiList = getEmojiList();
-    const wordsWithoutStopwords = stopword.removeStopwords(
-      event.text.toLowerCase().split(' ')
-    );
-
+  // Easter eggs
+  if (event.text === 'respond_jerm' || event.text === 'jeremy me boy') {
     await delay(1000);
-    for (let word of wordsWithoutStopwords) {
-      if (emojiList.includes(word)) {
-        await delay(300);
-        await addReactionOnce(event.channel, event.ts, word);
-      }
+    await web.chat.postMessage({
+      text: pickRandom(['hey', 'hello', 'hi there!', 'hey daddy']),
+      channel: event.channel,
+      as_user: false,
+      thread_ts: event.thread_ts,
+    });
+  }
+
+  // Emoji reactions on keyword matches
+  const emojiList = getEmojiList();
+  const wordsWithoutStopwords = stopword.removeStopwords(
+    event.text.toLowerCase().split(' ')
+  );
+  await delay(1000);
+  for (const word of wordsWithoutStopwords) {
+    if (emojiList.includes(word)) {
+      await delay(300);
+      await addReactionOnce(event.channel, event.ts, word);
     }
+  }
+};
 
-    if (event.text === 'I am at work!') {
-      if (!event.user) return;
-      await updateState({ [`at_work.${event.user}`]: true });
-      const newCurrentWork = await getCurrentAtWork();
-      let message =
-        newCurrentWork > 1
-          ? `Okay. there are now *${newCurrentWork} people* at work. Safesearch is on.`
-          : 'Okay. You are the only person at work. SafeSearch is on.';
-      web.chat.postMessage({
-        text: message,
-        channel: event.channel,
-        as_user: false,
-      });
-    }
+module.exports = async (event) => {
+  trackMessage(event);
+  lastEvent = event;
 
-    if (event.text === 'Who is at work?') {
-      const userNamesAtWork = (await getUsersCurrentlyAtWork()).map(
-        (user) => user.profile.display_name
-      );
-
-      let msg;
-      if (userNamesAtWork.length === 0) {
-        msg = 'There is no one at work.';
-      } else if (userNamesAtWork.length === 1) {
-        msg = `*${makeNiceListFromArray(userNamesAtWork)}* is at work.`;
-      } else if (userNamesAtWork.length > 1) {
-        msg = `*${makeNiceListFromArray(userNamesAtWork)}* are at work.`;
-      }
-
-      web.chat.postMessage({
-        text: msg,
-        channel: event.channel,
-        as_user: false,
-        thread_ts: event.thread_ts,
-      });
-    }
-
-    if (event.text === 'I am no longer at work!') {
-      if (!event.user) return;
-      await updateState({ [`at_work.${event.user}`]: false });
-      const newCurrentWork = await getCurrentAtWork();
-      let message;
-      if (newCurrentWork > 1) {
-        message = `Okay. There are still *${newCurrentWork} people* at work. SafeSearch is on.`;
-      } else if (newCurrentWork === 1) {
-        message = `Okay. There is still *${newCurrentWork} person* at work. SafeSearch is on.`;
-      } else if (newCurrentWork === 0) {
-        message = `Okay. No one is currently at work. Turning SafeSearch off.`;
-      }
-      web.chat.postMessage({
-        text: message,
-        channel: event.channel,
-        as_user: false,
-        thread_ts: event.thread_ts,
-      });
-    }
-
-    // This stopped working
-    // if (event.text.startsWith('<https://www.tiktok.com/')) {
-    //   await web.reactions.add({
-    //     channel: event.channel,
-    //     timestamp: event.ts,
-    //     name: 'eyes',
-    //   });
-    //   getTikTok(event);
-    // }
+  try {
+    if (!event.text) return;
+    const matched = await runCommand(event);
+    if (matched?.skipsAmbient) return;
+    await runAmbient(event);
   } catch (error) {
     console.log('An error occurred', error);
     web.chat.postMessage({
