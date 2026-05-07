@@ -5,9 +5,12 @@ const { spawn } = require('child_process');
 const { web } = require('./slackClient');
 const { addReactionOnce } = require('./reactionUtils');
 
+const LOCAL_YT_DLP = path.join(__dirname, '..', 'bin', 'yt-dlp');
+const ytDlpBin = fs.existsSync(LOCAL_YT_DLP) ? LOCAL_YT_DLP : 'yt-dlp';
+
 const downloadWithYtDlp = (url, outPath) =>
   new Promise((resolve, reject) => {
-    const proc = spawn('yt-dlp', [
+    const proc = spawn(ytDlpBin, [
       '--no-warnings',
       '--no-playlist',
       '-f',
