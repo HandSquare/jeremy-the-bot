@@ -1,6 +1,7 @@
 const stopword = require('stopword');
 const { getSelf } = require('./self');
 const messageHistory = require('./messageHistory');
+const { markDirty } = require('./messageHistoryPersistence');
 const sendImagesScreenshot = require('./sendImagesScreenshot');
 const {
   delay,
@@ -36,7 +37,7 @@ const messageHasImage = (msg) =>
   msg.files &&
   msg.files.some((f) => (f.mimetype || '').startsWith('image/'));
 
-const findLastImageMessage = async (event) => {
+const findLastMessageMatching = async (event, predicate) => {
   const inThread = !!event.thread_ts;
   const matchesContext = (msg) => {
     if (inThread) {
@@ -46,7 +47,7 @@ const findLastImageMessage = async (event) => {
   };
 
   const local = (messageHistory[event.channel] || []).find(
-    (m) => matchesContext(m) && messageHasImage(m)
+    (m) => m.ts !== event.ts && matchesContext(m) && predicate(m)
   );
   if (local) return local;
 
@@ -59,7 +60,8 @@ const findLastImageMessage = async (event) => {
       });
       const messages = result.messages || [];
       for (let i = messages.length - 1; i >= 0; i--) {
-        if (messageHasImage(messages[i])) return messages[i];
+        if (messages[i].ts !== event.ts && predicate(messages[i]))
+          return messages[i];
       }
     } else {
       const result = await web.conversations.history({
@@ -68,14 +70,29 @@ const findLastImageMessage = async (event) => {
       });
       const messages = result.messages || [];
       for (const msg of messages) {
-        if (!msg.thread_ts && messageHasImage(msg)) return msg;
+        if (msg.ts !== event.ts && !msg.thread_ts && predicate(msg)) return msg;
       }
     }
   } catch (e) {
-    console.log('findLastImageMessage fetch error', e.message);
+    console.log('findLastMessageMatching fetch error', e.message);
   }
   return null;
 };
+
+const findLastImageMessage = (event) =>
+  findLastMessageMatching(event, messageHasImage);
+
+const LINK_REGEX =
+  /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/;
+
+const messageLink = (msg) => {
+  const text = msg.text || msg.message?.text;
+  const m = text?.match(LINK_REGEX);
+  return m ? m[1] : null;
+};
+
+const findLastLinkMessage = (event) =>
+  findLastMessageMatching(event, (msg) => !!messageLink(msg));
 
 at('18:30', async () => {
   const atWork = await getCurrentAtWork();
@@ -122,6 +139,7 @@ module.exports = async (event) => {
 
   // Add message to queue
   messageHistory[event.channel].unshift(event);
+  markDirty(event.channel);
 
   try {
     if (!event.text) return;
@@ -226,21 +244,10 @@ module.exports = async (event) => {
     } else if (event.text.toLowerCase().includes(', preview that link')) {
       await addReactionOnce(event.channel, event.ts, 'mag_right');
 
-      // https://regex101.com/library/y09jwv
-      const linkRegex =
-        /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/;
-      const channelHistory = messageHistory[event.channel] || [];
-      let foundLink = null;
-      for (let i = 1; i < channelHistory.length; i++) {
-        const text = channelHistory[i].text || channelHistory[i].message?.text;
-        const m = text?.match(linkRegex);
-        if (m) {
-          foundLink = m[1];
-          break;
-        }
-      }
-      if (!foundLink) return;
-      sendPageScreenshot(event, foundLink, 'preview');
+      const sourceMessage = await findLastLinkMessage(event);
+      const link = sourceMessage && messageLink(sourceMessage);
+      if (!link) return;
+      sendPageScreenshot(event, link, 'preview');
     } else if (event.text.match(/, look up (.*)/)) {
       // React to the message
       await addReactionOnce(event.channel, event.ts, 'mag_right');

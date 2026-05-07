@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const { getFirestore, db } = require('firebase-admin/firestore');
+const { getFirestore } = require('firebase-admin/firestore');
 
 let store;
 
@@ -17,11 +17,11 @@ async function startStore() {
     client_x509_cert_url: process.env.CLIENT_X509_CERT_URL,
   };
 
-  const app = admin.initializeApp({
+  admin.initializeApp({
     credential: admin.credential.cert(creds),
   });
   store = getFirestore();
-  const doc = store.doc('main/state');
+  store.settings({ ignoreUndefinedProperties: true });
 }
 
 const getState = () => {
@@ -36,9 +36,31 @@ const getStateValue = async (field) => {
   return (await getState().get()).get(field);
 };
 
+const loadAllChannelHistories = async () => {
+  const snapshot = await store.collection('messageHistory').get();
+  const result = {};
+  snapshot.forEach((doc) => {
+    result[doc.id] = doc.data().messages || [];
+  });
+  return result;
+};
+
+const saveChannelHistory = (channelId, messages) => {
+  return store
+    .doc(`messageHistory/${channelId}`)
+    .set({ messages, updatedAt: Date.now() });
+};
+
+const deleteChannelHistory = (channelId) => {
+  return store.doc(`messageHistory/${channelId}`).delete();
+};
+
 module.exports = {
   startStore,
   getState,
   getStateValue,
   updateState,
+  loadAllChannelHistories,
+  saveChannelHistory,
+  deleteChannelHistory,
 };
