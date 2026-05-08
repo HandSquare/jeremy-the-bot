@@ -9,6 +9,8 @@ const { gatherEmoji } = require('./emojiList');
 const handleReaction = require('./handleReaction');
 const { setSelf } = require('./self');
 const { startStore } = require('./db');
+const { init: initMessageHistory } = require('./messageHistoryPersistence');
+const { init: initPeople } = require('./people');
 const { startTimer } = require('./timer');
 
 rtm.on('reaction_added', handleReaction);
@@ -19,16 +21,19 @@ rtm.on('message', handleMessage);
 app.listen(process.env.PORT);
 
 const boot = async () => {
+  await startStore();
+  await initMessageHistory();
+  await initPeople();
   const { self, team } = await rtm.start();
   gatherEmoji();
   setSelf(self);
 };
 
 // Boot immediately
-boot();
-
-// Start firebase
-startStore();
+boot().catch((err) => {
+  console.error('boot failed', err);
+  process.exit(1);
+});
 
 // Start our clock event listener
 startTimer();

@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "postinstall": "node scripts/install-yt-dlp.js"
   },
   "keywords": [],
   "author": "",
