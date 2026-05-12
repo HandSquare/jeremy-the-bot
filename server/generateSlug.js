@@ -8,7 +8,7 @@ const MAX_LEN = 14;
 module.exports = async (prompt) => {
   try {
     const response = await openai.responses.create({
-      model: 'gpt-5-nano',
+      model: 'gpt-5.4-nano',
       instructions: `Generate a short slug (1-3 words, lowercase, hyphens between words, max ${MAX_LEN} chars total) summarizing this image prompt for use as a filename. Reply with only the slug, no extension, no punctuation.`,
       input: prompt,
     });

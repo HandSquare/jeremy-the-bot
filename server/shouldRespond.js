@@ -40,7 +40,7 @@ module.exports = async (event) => {
   let outputText = '';
   try {
     const response = await openai.responses.create({
-      model: 'gpt-5-nano',
+      model: 'gpt-5.4-nano',
       instructions: routingInstructions,
       input,
     });

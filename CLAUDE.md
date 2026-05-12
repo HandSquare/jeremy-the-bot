@@ -11,19 +11,27 @@ Slack bot that responds to messages with AI-generated text, images, and screensh
 
 ## Architecture
 
-- Stateless Node.js process (no database besides Firebase for config)
+- Stateless Node.js process (Firestore for config + message history + people dictionary)
 - Uses Slack RTM API (`@slack/rtm-api`) for real-time message listening
 - Uses Slack Web API (`@slack/web-api` v7) for posting messages and uploading files
+- Command routing: `server/commands.js` — flat `COMMANDS` array, first match wins
 - Entry point: `server/index.js`
 - Listens on `process.env.PORT`
 
 ## Key Files
 
+- `server/commands.js` — all command matchers and handlers
+- `server/handleMessage.js` — message bookkeeping, ambient behaviors (greetings, emoji)
 - `server/slackClient.js` — RTM + Web client setup
 - `server/getDallEImage.js` — image generation (OpenAI `gpt-image-2`)
-- `server/getChatbot.js` — chat responses (OpenAI `gpt-5-mini`)
-- `server/shouldRespond.js` — decides if Jeremy should reply (`gpt-5-nano`)
-- `server/describeImage.js` — image description (`gpt-4o`)
+- `server/getImageEdit.js` — image editing (OpenAI `gpt-image-2`)
+- `server/getChatbot.js` — chat responses (OpenAI `gpt-5.4-mini`)
+- `server/describeImage.js` — image description (OpenAI `gpt-5.4-mini`)
+- `server/generateSlug.js` — short filename slugs (OpenAI `gpt-5.4-nano`)
+- `server/getVideo.js` — video downloads via `yt-dlp` (Instagram, TikTok, X)
+- `server/people.js` — Firestore-backed people dictionary with prompt substitution
+- `server/messageHistoryPersistence.js` — Firestore persistence for message history
+- `server/shouldRespond.js` — unused, decides if Jeremy should reply (`gpt-5.4-nano`)
 - `server/sendPageScreenshot.js` — puppeteer page screenshots
 - `server/sendImagesScreenshot.js` — puppeteer image screenshots
 

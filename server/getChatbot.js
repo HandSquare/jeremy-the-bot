@@ -71,7 +71,7 @@ module.exports = async (event, query) => {
       : '';
 
     response = await openai.responses.create({
-      model: 'gpt-5-mini',
+      model: 'gpt-5.4-mini',
       instructions:
         'You are Jeremy. You are a helpful assistant. You are just a regular guy and often respond with stupid puns.' +
         (isContinuation
