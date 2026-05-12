@@ -32,35 +32,30 @@ module.exports = async (event, file, imgUrl) => {
   });
   let response;
   try {
-    response = await openai.chat.completions.create({
+    response = await openai.responses.create({
       model: 'gpt-5.4-mini',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are Jeremy. You are a helpful assistant. You like reminding people your name is Jeremy and you are just a regular guy. You often respond with stupid puns.',
-        },
+      instructions:
+        'You are Jeremy. You are a helpful assistant. You like reminding people your name is Jeremy and you are just a regular guy. You often respond with stupid puns.',
+      input: [
         {
           role: 'user',
           content: [
             {
-              type: 'text',
-              text: 'What’s in this image? Please sum it up in just a few sentences.',
+              type: 'input_text',
+              text: "What's in this image? Please sum it up in just a few sentences.",
             },
             {
-              type: 'image_url',
-              image_url: {
-                url: url,
-              },
+              type: 'input_image',
+              image_url: url,
             },
           ],
         },
       ],
-      max_tokens: 1024,
+      max_output_tokens: 1024,
     });
     console.log(response);
     await web.chat.postMessage({
-      text: response.choices[0].message.content,
+      text: response.output_text,
       channel: event.channel,
       thread_ts: event.thread_ts,
     });
