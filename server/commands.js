@@ -205,7 +205,8 @@ const COMMANDS = [
   },
   {
     name: 'define',
-    match: (event) => event.text.match(/, define\s+"([^"]+)"\s+"([^"]+)"/i),
+    match: (event) =>
+      event.text.match(/, define\s+[“""]([^""”]+)[”""]\s+[“""]([^""”]+)[”""]/i),
     handle: async (event, m) => {
       const name = m[1].trim();
       const description = m[2].trim();
