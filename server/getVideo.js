@@ -36,6 +36,11 @@ const isRateLimitError = (err) =>
     err.message || ''
   );
 
+const isNoMediaError = (err) =>
+  /no video|no media|unsupported url|there's no video|unable to extract/i.test(
+    err.message || ''
+  );
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 module.exports = async (event, url) => {
@@ -61,12 +66,23 @@ module.exports = async (event, url) => {
       thread_ts: event.thread_ts,
     });
   } catch (e) {
-    console.log('getVideo error', e.message);
-    await web.chat.postMessage({
-      text: `couldn't grab that one: ${e.message}`,
-      channel: event.channel,
-      thread_ts: event.thread_ts,
-    });
+    if (isNoMediaError(e)) {
+      console.log('getVideo no media, skipping:', url);
+      web.reactions
+        .remove({
+          channel: event.channel,
+          timestamp: event.ts,
+          name: 'eyes',
+        })
+        .catch(() => {});
+    } else {
+      console.log('getVideo error', e.message);
+      await web.chat.postMessage({
+        text: `couldn't grab that one: ${e.message}`,
+        channel: event.channel,
+        thread_ts: event.thread_ts,
+      });
+    }
   } finally {
     fs.promises.unlink(outPath).catch(() => {});
   }
