@@ -7,6 +7,19 @@ const customSearchId = process.env.GOOGLE_SEARCH_ID;
 
 const search = customsearch('v1');
 
+const isReachable = async (url) => {
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(5_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
 const getSearchImage = async (query, atWork) => {
   const res = await search.cse.list({
     cx: customSearchId,
@@ -16,9 +29,11 @@ const getSearchImage = async (query, atWork) => {
     safe: atWork ? 'active' : 'off',
   });
 
-  const firstImg = res.data.items[0].link;
-
-  return firstImg;
+  const items = res.data.items || [];
+  for (const item of items) {
+    if (await isReachable(item.link)) return item.link;
+  }
+  return items[0]?.link || null;
 };
 
 const getSearchText = async (query) => {
