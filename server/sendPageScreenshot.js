@@ -1,13 +1,10 @@
-const puppeteer = require('puppeteer');
+const launchBrowser = require('./launchBrowser');
 const { web } = require('./slackClient');
 
 const sendPageScreenshot = async (event, url, caption) => {
   let browser;
   try {
-    browser = await puppeteer.launch({
-      headless: 'shell',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    browser = await launchBrowser();
     const page = await browser.newPage();
     await page.setViewport({
       width: 1280,

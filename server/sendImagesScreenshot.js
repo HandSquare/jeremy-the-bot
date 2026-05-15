@@ -1,12 +1,9 @@
-const puppeteer = require('puppeteer');
+const launchBrowser = require('./launchBrowser');
 const { web } = require('./slackClient');
 const { getCurrentAtWork } = require('./util');
 
 const sendImagesScreenshot = async (event, query, firstImageOnly) => {
-  const browser = await puppeteer.launch({
-    headless: 'shell',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
+  const browser = await launchBrowser();
   setTimeout(() => {
     // after 60s close the browser to prevent mem leaks
     try {

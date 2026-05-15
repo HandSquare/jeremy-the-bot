@@ -8,13 +8,14 @@
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
     "prepare": "husky install",
-    "postinstall": "node scripts/install-yt-dlp.js"
+    "postinstall": "node scripts/install-yt-dlp.js && node scripts/install-chrome.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@googleapis/customsearch": "^1.0.4",
+    "@puppeteer/browsers": "^3.0.2",
     "@slack/rtm-api": "^6.2.1",
     "@slack/web-api": "^7.13.0",
     "args-parser": "^1.1.0",
@@ -24,7 +25,7 @@
     "firebase-admin": "^13.7.0",
     "openai": "^5.12.2",
     "path": "^0.12.7",
-    "puppeteer": "^25.0.2",
+    "puppeteer-core": "^25.0.2",
     "stopword": "^0.2.4"
   },
   "devDependencies": {
