@@ -334,7 +334,7 @@ const COMMANDS = [
       getImageEdit(
         event,
         sourceMessage,
-        'zoom in on the center of the image',
+        'Crop and zoom into the center 40% of the image, filling the entire frame. The result should feel dramatically closer, like a 2.5x zoom.',
         'enhance'
       );
     },
