@@ -1,19 +1,15 @@
-const launchBrowser = require('./launchBrowser');
 const { web } = require('./slackClient');
 
+const THUM_BASE = 'https://image.thum.io/get/width/1280';
+
 const sendPageScreenshot = async (event, url, caption) => {
-  let browser;
   try {
-    browser = await launchBrowser();
-    const page = await browser.newPage();
-    await page.setViewport({
-      width: 1280,
-      height: 1024,
+    const screenshotUrl = `${THUM_BASE}/${url}`;
+    const res = await fetch(screenshotUrl, {
+      signal: AbortSignal.timeout(30_000),
     });
-
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30_000 });
-
-    const data = await page.screenshot();
+    if (!res.ok) throw new Error(`thum.io returned ${res.status}`);
+    const data = Buffer.from(await res.arrayBuffer());
 
     await web.filesUploadV2({
       channel_id: event.channel,
@@ -28,8 +24,6 @@ const sendPageScreenshot = async (event, url, caption) => {
       text: `couldn't screenshot that page: ${e.message}`,
       thread_ts: event.thread_ts || event.ts,
     });
-  } finally {
-    if (browser) await browser.close();
   }
 };
 

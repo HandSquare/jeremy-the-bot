@@ -13,7 +13,6 @@ const { getSelf } = require('./self');
 
 const people = require('./people');
 
-const sendImagesScreenshot = require('./sendImagesScreenshot');
 const sendPageScreenshot = require('./sendPageScreenshot');
 const getDallEImage = require('./getDallEImage');
 const getImageEdit = require('./getImageEdit');
@@ -134,7 +133,7 @@ const COMMANDS = [
     match: (event) => event.text.match(/[Ww]hat means (.*)/),
     handle: async (event, m) => {
       await addReactionOnce(event.channel, event.ts, 'eyes');
-      await sendImagesScreenshot(event, m[1]);
+      await performGoogleImageSearch(event, m[1]);
     },
   },
   {
@@ -293,7 +292,7 @@ const COMMANDS = [
         const query = stopword
           .removeStopwords(lastMessage.text.split(' '))
           .join(' ');
-        await sendImagesScreenshot(event, query);
+        await performGoogleImageSearch(event, query);
       }
     },
   },
