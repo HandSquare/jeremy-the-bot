@@ -47,8 +47,11 @@ const findVideoUrl = (text) => {
 };
 
 const findLastMessageMatching = async (event, predicate) => {
+  const selfId = getSelf()?.id;
   const inThread = !!event.thread_ts;
-  const matchesContext = (msg) => {
+  const isCandidate = (msg) => {
+    if (msg.ts === event.ts) return false;
+    if (msg.bot_id || msg.user === selfId) return false;
     if (inThread) {
       return msg.thread_ts === event.thread_ts || msg.ts === event.thread_ts;
     }
@@ -56,7 +59,7 @@ const findLastMessageMatching = async (event, predicate) => {
   };
 
   const local = (messageHistory[event.channel] || []).find(
-    (m) => m.ts !== event.ts && matchesContext(m) && predicate(m)
+    (m) => isCandidate(m) && predicate(m)
   );
   if (local) return local;
 
@@ -69,7 +72,7 @@ const findLastMessageMatching = async (event, predicate) => {
       });
       const messages = result.messages || [];
       for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].ts !== event.ts && predicate(messages[i]))
+        if (isCandidate(messages[i]) && predicate(messages[i]))
           return messages[i];
       }
     } else {
@@ -79,7 +82,7 @@ const findLastMessageMatching = async (event, predicate) => {
       });
       const messages = result.messages || [];
       for (const msg of messages) {
-        if (msg.ts !== event.ts && !msg.thread_ts && predicate(msg)) return msg;
+        if (isCandidate(msg) && !msg.thread_ts && predicate(msg)) return msg;
       }
     }
   } catch (e) {
