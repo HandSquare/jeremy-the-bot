@@ -1,6 +1,6 @@
 # Jeremy the Bot
 
-Slack bot that responds to messages with AI-generated text, images, and screenshots.
+Slack bot that responds to messages with AI-generated text, images, and link previews.
 
 ## Deployment
 
@@ -8,32 +8,33 @@ Slack bot that responds to messages with AI-generated text, images, and screensh
 - **Deploys on**: push to `master` — Railway auto-deploys from the remote repo
 - **`railway up` and `railway redeploy`**: these deploy from LOCAL files, NOT from GitHub. To trigger a proper deploy, push to master.
 - **Railway project**: https://railway.com/project/a5fe0f01-031a-4254-96ce-a1e19cf42433
+- **TypeScript branch**: `typescript-migration` — requires `npm run build` before `npm start`
 
 ## Architecture
 
 - Stateless Node.js process (Firestore for config + message history + people dictionary)
 - Uses Slack RTM API (`@slack/rtm-api`) for real-time message listening
 - Uses Slack Web API (`@slack/web-api` v7) for posting messages and uploading files
-- Command routing: `server/commands.js` — flat `COMMANDS` array, first match wins
-- Entry point: `server/index.js`
+- Command routing: `server/commands.ts` — flat `COMMANDS` array, first match wins
+- Entry point: `server/index.ts`
 - Listens on `process.env.PORT`
 
 ## Key Files
 
-- `server/commands.js` — all command matchers and handlers
-- `server/handleMessage.js` — message bookkeeping, ambient behaviors (greetings, emoji)
-- `server/slackClient.js` — RTM + Web client setup
-- `server/getDallEImage.js` — image generation (OpenAI `gpt-image-2`)
-- `server/getImageEdit.js` — image editing (OpenAI `gpt-image-2`)
-- `server/getChatbot.js` — chat responses (OpenAI `gpt-5.4-mini`)
-- `server/describeImage.js` — image description (OpenAI `gpt-5.4-mini`)
-- `server/generateSlug.js` — short filename slugs (OpenAI `gpt-5.4-nano`)
-- `server/getVideo.js` — video downloads via `yt-dlp` (Instagram, TikTok, X)
-- `server/people.js` — Firestore-backed people dictionary with prompt substitution
-- `server/messageHistoryPersistence.js` — Firestore persistence for message history
-- `server/shouldRespond.js` — unused, decides if Jeremy should reply (`gpt-5.4-nano`)
-- `server/sendPageScreenshot.js` — puppeteer page screenshots
-- `server/sendImagesScreenshot.js` — puppeteer image screenshots
+- `server/commands.ts` — all command matchers and handlers
+- `server/types.ts` — shared TypeScript interfaces (SlackMessage, Command, etc.)
+- `server/handleMessage.ts` — message bookkeeping, ambient behaviors (greetings, emoji)
+- `server/slackClient.ts` — RTM + Web client setup
+- `server/getDallEImage.ts` — image generation (OpenAI `gpt-image-2`)
+- `server/getImageEdit.ts` — image editing (OpenAI `gpt-image-2`)
+- `server/getChatbot.ts` — chat responses (OpenAI `gpt-5.4-mini`)
+- `server/describeImage.ts` — image description (OpenAI `gpt-5.4-mini`)
+- `server/generateSlug.ts` — short filename slugs (OpenAI `gpt-5.4-nano`)
+- `server/getVideo.ts` — video downloads via `yt-dlp` (Instagram, TikTok, X)
+- `server/people.ts` — Firestore-backed people dictionary with prompt substitution
+- `server/messageHistoryPersistence.ts` — Firestore persistence for message history
+- `server/sendPageScreenshot.ts` — link previews via thum.io (screenshot API)
+- `server/performGoogleSearch.ts` — Google image/text search with reachability check
 
 ## Slack File Uploads
 
