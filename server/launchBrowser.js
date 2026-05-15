@@ -1,34 +1,25 @@
 const puppeteer = require('puppeteer-core');
-const {
-  computeExecutablePath,
-  Browser,
-  detectBrowserPlatform,
-  getInstalledBrowsers,
-} = require('@puppeteer/browsers');
+const fs = require('fs');
 const path = require('path');
 
 const cacheDir = path.join(__dirname, '..', '.cache', 'puppeteer');
 
-let cachedPath;
-
-const getExecutablePath = async () => {
-  if (cachedPath) return cachedPath;
-  const installed = await getInstalledBrowsers({ cacheDir });
-  const shell = installed.find(
-    (b) => b.browser === Browser.CHROMEHEADLESSSHELL
-  );
-  if (!shell)
+const getExecutablePath = () => {
+  const entries = fs
+    .readdirSync(cacheDir)
+    .filter((d) => d.startsWith('chrome-headless-shell-'));
+  if (entries.length === 0) {
     throw new Error(
       'chrome-headless-shell not installed — run npm run postinstall'
     );
-  cachedPath = shell.executablePath;
-  return cachedPath;
+  }
+  return path.join(cacheDir, entries[0], 'chrome-headless-shell');
 };
 
-const launchBrowser = async () =>
+const launchBrowser = () =>
   puppeteer.launch({
     headless: 'shell',
-    executablePath: await getExecutablePath(),
+    executablePath: getExecutablePath(),
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
