@@ -4,7 +4,7 @@ const { getCurrentAtWork } = require('./util');
 
 const sendImagesScreenshot = async (event, query, firstImageOnly) => {
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: 'shell',
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   setTimeout(() => {

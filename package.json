@@ -24,7 +24,7 @@
     "firebase-admin": "^13.7.0",
     "openai": "^5.12.2",
     "path": "^0.12.7",
-    "puppeteer": "^1.18.1",
+    "puppeteer": "^25.0.2",
     "stopword": "^0.2.4"
   },
   "devDependencies": {
