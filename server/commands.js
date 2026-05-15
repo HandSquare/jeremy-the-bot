@@ -305,8 +305,15 @@ const COMMANDS = [
       await addReactionOnce(event.channel, event.ts, 'mag_right');
       const sourceMessage = await findLastLinkMessage(event);
       const link = sourceMessage && messageLink(sourceMessage);
-      if (!link) return;
-      sendPageScreenshot(event, link, 'preview');
+      if (!link) {
+        await web.chat.postMessage({
+          channel: event.channel,
+          text: "i don't see a link to preview",
+          thread_ts: event.thread_ts || event.ts,
+        });
+        return;
+      }
+      await sendPageScreenshot(event, link, 'preview');
     },
   },
   {

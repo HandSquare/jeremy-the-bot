@@ -31,6 +31,7 @@ const downloadWithYtDlp = (url, outPath) =>
   });
 
 const RATE_LIMIT_RETRY_MS = 30_000;
+const GENERAL_RETRY_MS = 120_000;
 const isRateLimitError = (err) =>
   /rate-limit|rate limit|429|too many requests|login required/i.test(
     err.message || ''
@@ -76,12 +77,28 @@ module.exports = async (event, url) => {
         })
         .catch(() => {});
     } else {
-      console.log('getVideo error', e.message);
+      console.log('getVideo error, will retry in 2 min:', e.message);
       await web.chat.postMessage({
-        text: `couldn't grab that one: ${e.message}`,
+        text: "this isn't working right now but i'll try again in a bit",
         channel: event.channel,
         thread_ts: event.thread_ts,
       });
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        await sleep(GENERAL_RETRY_MS);
+        try {
+          await downloadWithYtDlp(url, outPath);
+          const buffer = fs.readFileSync(outPath);
+          await web.filesUploadV2({
+            channel_id: event.channel,
+            file: buffer,
+            filename: `${id}.mp4`,
+            thread_ts: event.thread_ts,
+          });
+          break;
+        } catch (retryErr) {
+          console.log(`getVideo retry ${attempt}/2 failed:`, retryErr.message);
+        }
+      }
     }
   } finally {
     fs.promises.unlink(outPath).catch(() => {});
