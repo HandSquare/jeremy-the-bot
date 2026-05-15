@@ -1,26 +1,6 @@
 const puppeteer = require('puppeteer');
 const { web } = require('./slackClient');
-
-const https = require('https');
-const http = require('http');
-const { getStateValue } = require('./db');
-const { delay, getCurrentAtWork } = require('./util');
-
-const getScreenshotOfSingleImage = async (page, imageUrl) => {
-  await page.goto(imageUrl);
-  const { width, height } = await page.evaluate(() => {
-    const img = document.getElementsByTagName('img')[0];
-    return {
-      width: img.width,
-      height: img.height,
-    };
-  });
-  page.setViewport({
-    width,
-    height,
-  });
-  return page.screenshot();
-};
+const { getCurrentAtWork } = require('./util');
 
 const sendImagesScreenshot = async (event, query, firstImageOnly) => {
   const browser = await puppeteer.launch({

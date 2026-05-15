@@ -71,11 +71,6 @@ const performGoogleTextSearch = async (event, query) => {
   });
 };
 
-const go = async () => {
-  const val = await getSearchText('dog');
-  console.log(val);
-};
-
 module.exports = {
   performGoogleTextSearch,
   performGoogleImageSearch,
