@@ -1,30 +1,30 @@
-const OpenAI = require('openai');
-const configuration = {
-  apiKey: process.env.OPENAI_API_KEY,
-};
-const openai = new OpenAI(configuration);
+import OpenAI from 'openai';
+import { web } from './slackClient';
+import { getUsers } from './util';
+import { getSelf } from './self';
+import messageHistory from './messageHistory';
+import * as people from './people';
+import { SlackMessageEvent } from './types';
 
-const { web } = require('./slackClient');
-const { getBufferFromRequest, getUsers } = require('./util');
-const { getSelf } = require('./self');
-const messageHistory = require('./messageHistory');
-const people = require('./people');
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-module.exports = async (event, query) => {
+const getChatbot = async (
+  event: SlackMessageEvent,
+  query: string
+): Promise<void> => {
   console.log({ event });
   await web.reactions.add({
     channel: event.channel,
     timestamp: event.ts,
     name: 'thinking_face',
   });
-  let response;
   try {
     // Get user mappings for better context
     const users = await getUsers();
     const userHash = users.reduce((prev, curr) => {
       prev[curr.id] = curr.name;
       return prev;
-    }, {});
+    }, {} as Record<string, string>);
 
     const self = getSelf();
 
@@ -38,11 +38,11 @@ module.exports = async (event, query) => {
       .map((m) => {
         const isJeremy =
           m.subtype === 'bot_message' &&
-          (m.user === self.id ||
-            m.username?.toLowerCase() === self.name.toLowerCase());
+          (m.user === self?.id ||
+            m.username?.toLowerCase() === self?.name.toLowerCase());
         const author = isJeremy
           ? 'Jeremy'
-          : userHash[m.user] || m.username || m.user || 'user';
+          : userHash[m.user!] || m.username || m.user || 'user';
         return `${author}: ${m.text}`;
       })
       .join('\n');
@@ -53,12 +53,12 @@ module.exports = async (event, query) => {
         (m) =>
           m &&
           m.subtype === 'bot_message' &&
-          (m.user === self.id ||
-            m.username?.toLowerCase() === self.name.toLowerCase())
+          (m.user === self?.id ||
+            m.username?.toLowerCase() === self?.name.toLowerCase())
       );
 
     const currentUserName =
-      userHash[event.user] || event.username || event.user || 'user';
+      userHash[event.user!] || event.username || event.user || 'user';
     const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\n${currentUserName}: ${query}\nJeremy:`;
 
     const peopleDict = people.all();
@@ -70,7 +70,7 @@ module.exports = async (event, query) => {
         '.'
       : '';
 
-    response = await openai.responses.create({
+    const response = await openai.responses.create({
       model: 'gpt-5.4-mini',
       instructions:
         'You are Jeremy. You are a helpful assistant. You are just a regular guy and often respond with stupid puns.' +
@@ -87,7 +87,7 @@ module.exports = async (event, query) => {
       channel: event.channel,
       thread_ts: event.thread_ts,
     });
-  } catch (e) {
+  } catch (e: any) {
     console.log('err', e);
     await web.chat.postMessage({
       text: `error sry: ${e.message}`,
@@ -96,3 +96,5 @@ module.exports = async (event, query) => {
     });
   }
 };
+
+export default getChatbot;

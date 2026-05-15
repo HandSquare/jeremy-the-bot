@@ -1,20 +1,22 @@
-const axios = require('axios');
-const OpenAI = require('openai');
-const configuration = {
-  apiKey: process.env.OPENAI_API_KEY,
-};
-const { web } = require('./slackClient');
+import axios from 'axios';
+import OpenAI from 'openai';
+import { web } from './slackClient';
+import { SlackMessageEvent, SlackFile } from './types';
 
-const openai = new OpenAI(configuration);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-module.exports = async (event, file, imgUrl) => {
+const describeImage = async (
+  event: SlackMessageEvent,
+  file?: SlackFile,
+  imgUrl?: string
+): Promise<void> => {
   console.log({ file });
-  let url;
+  let url: string | undefined;
 
   if (imgUrl) url = imgUrl;
   else if (file) {
     const link = file.url_private_download || file.url_private;
-    const resp = await axios.get(link, {
+    const resp = await axios.get(link!, {
       responseType: 'arraybuffer',
       headers: {
         Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
@@ -30,9 +32,8 @@ module.exports = async (event, file, imgUrl) => {
     timestamp: event.ts,
     name: 'thinking_face',
   });
-  let response;
   try {
-    response = await openai.responses.create({
+    const response = await openai.responses.create({
       model: 'gpt-5.4-mini',
       instructions:
         'You are Jeremy. You are a helpful assistant. You like reminding people your name is Jeremy and you are just a regular guy. You often respond with stupid puns.',
@@ -46,7 +47,8 @@ module.exports = async (event, file, imgUrl) => {
             },
             {
               type: 'input_image',
-              image_url: url,
+              image_url: url!,
+              detail: 'auto',
             },
           ],
         },
@@ -59,7 +61,7 @@ module.exports = async (event, file, imgUrl) => {
       channel: event.channel,
       thread_ts: event.thread_ts,
     });
-  } catch (e) {
+  } catch (e: any) {
     console.log('err', e);
     await web.chat.postMessage({
       text: `error sry: ${e.message}`,
@@ -68,3 +70,5 @@ module.exports = async (event, file, imgUrl) => {
     });
   }
 };
+
+export default describeImage;

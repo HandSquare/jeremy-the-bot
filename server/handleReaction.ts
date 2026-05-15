@@ -1,12 +1,13 @@
-const { getSelf } = require('./self');
-const { delay } = require('./util');
-const { web, rtm } = require('./slackClient');
+import { getSelf } from './self';
+import { delay } from './util';
+import { web } from './slackClient';
+import { SlackReactionEvent } from './types';
 
-module.exports = async (event) => {
+const handleReaction = async (event: SlackReactionEvent): Promise<void> => {
   // Don't react on top of self
-  if (event.user === getSelf().id) return;
+  if (event.user === getSelf()?.id) return;
 
-  // 🍆🔨
+  // eggplant + hammer
   if (event.reaction === 'watermelon') {
     // React to the message
     try {
@@ -43,3 +44,5 @@ module.exports = async (event) => {
     }
   }
 };
+
+export default handleReaction;

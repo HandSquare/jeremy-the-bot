@@ -2,11 +2,12 @@
   "name": "jeremy-2",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/server/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server/index.js",
-    "dev": "nodemon server/index.js",
+    "build": "tsc",
+    "start": "node dist/server/index.js",
+    "dev": "nodemon server/index.ts",
     "prepare": "husky install",
     "postinstall": "node scripts/install-yt-dlp.js"
   },
@@ -27,12 +28,16 @@
     "stopword": "^0.2.4"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.8.0",
+    "@types/stopword": "^2.0.3",
     "husky": "^7.0.4",
     "lint-staged": "^12.3.4",
     "nodemon": "^2.0.22",
-    "prettier": "^2.5.1"
+    "prettier": "^2.5.1",
+    "typescript": "^6.0.3"
   },
   "lint-staged": {
-    "*.{js,css,md}": "prettier --write --single-quote"
+    "*.{js,ts,css,md}": "prettier --write --single-quote"
   }
 }

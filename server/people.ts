@@ -1,26 +1,26 @@
-const admin = require('firebase-admin');
-const { getStateValue, updateState } = require('./db');
+import * as admin from 'firebase-admin';
+import { getStateValue, updateState } from './db';
 
-let cache = {};
+let cache: Record<string, string> = {};
 
-const init = async () => {
+export const init = async (): Promise<void> => {
   try {
     cache = (await getStateValue('people')) || {};
     console.log(`loaded ${Object.keys(cache).length} people`);
-  } catch (e) {
+  } catch (e: any) {
     console.log('people init error', e.message);
     cache = {};
   }
 };
 
-const get = (name) => {
+export const get = (name: string): string | null => {
   const key = Object.keys(cache).find(
     (k) => k.toLowerCase() === name.toLowerCase()
   );
   return key ? cache[key] : null;
 };
 
-const set = async (name, description) => {
+export const set = async (name: string, description: string): Promise<void> => {
   const existing = Object.keys(cache).find(
     (k) => k.toLowerCase() === name.toLowerCase()
   );
@@ -29,7 +29,7 @@ const set = async (name, description) => {
   await updateState({ [`people.${key}`]: description });
 };
 
-const remove = async (name) => {
+export const remove = async (name: string): Promise<boolean> => {
   const key = Object.keys(cache).find(
     (k) => k.toLowerCase() === name.toLowerCase()
   );
@@ -41,14 +41,14 @@ const remove = async (name) => {
   return true;
 };
 
-const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Replace each known name in the text with its description. Single pass,
 // word-bounded, case-insensitive.
 // Replace each known name with [description] so the image model treats the
 // description as a single compositional unit. No preamble text (image models
 // render preambles as literal text in the image).
-const substitute = (text) => {
+export const substitute = (text: string): string => {
   if (!text) return text;
   const names = Object.keys(cache);
   if (names.length === 0) return text;
@@ -59,6 +59,4 @@ const substitute = (text) => {
   });
 };
 
-const all = () => ({ ...cache });
-
-module.exports = { init, get, set, remove, substitute, all };
+export const all = (): Record<string, string> => ({ ...cache });

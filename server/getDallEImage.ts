@@ -1,14 +1,15 @@
-const OpenAI = require('openai');
-const configuration = {
-  apiKey: process.env.OPENAI_API_KEY,
-};
-const openai = new OpenAI(configuration);
+import OpenAI from 'openai';
+import { web } from './slackClient';
+import generateSlug from './generateSlug';
+import { SlackMessageEvent } from './types';
 
-const { web } = require('./slackClient');
-const { getBufferFromRequest } = require('./util');
-const generateSlug = require('./generateSlug');
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-module.exports = async (event, query, slugInput = query) => {
+const getDallEImage = async (
+  event: SlackMessageEvent,
+  query: string,
+  slugInput: string = query
+): Promise<void> => {
   await web.reactions.add({
     channel: event.channel,
     timestamp: event.ts,
@@ -26,7 +27,7 @@ module.exports = async (event, query, slugInput = query) => {
       generateSlug(slugInput),
     ]);
 
-    const base64Data = response.data[0].b64_json;
+    const base64Data = response.data![0].b64_json!;
     const data = Buffer.from(base64Data, 'base64');
 
     const result = await web.filesUploadV2({
@@ -35,7 +36,7 @@ module.exports = async (event, query, slugInput = query) => {
       filename: `${slug}.png`,
     });
     console.log('File uploaded:', result.files);
-  } catch (e) {
+  } catch (e: any) {
     console.log('err', e);
     await web.chat.postMessage({
       text: `error sry: ${e.message}`,
@@ -44,3 +45,5 @@ module.exports = async (event, query, slugInput = query) => {
     });
   }
 };
+
+export default getDallEImage;

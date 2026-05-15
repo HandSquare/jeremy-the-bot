@@ -1,15 +1,16 @@
-const messageHistory = require('./messageHistory');
-const {
+import messageHistory from './messageHistory';
+import {
   loadAllChannelHistories,
   saveChannelHistory,
   deleteChannelHistory,
-} = require('./db');
+} from './db';
+import { SlackMessage, SlackFile } from './types';
 
 const SAVE_DEBOUNCE_MS = 5000;
-const isDM = (channelId) => channelId && channelId.startsWith('D');
+const isDM = (channelId: string) => channelId && channelId.startsWith('D');
 
-const slimEvent = (e) => {
-  const slim = {
+const slimEvent = (e: SlackMessage): SlackMessage => {
+  const slim: SlackMessage = {
     ts: e.ts,
     text: e.text,
     user: e.user,
@@ -19,14 +20,16 @@ const slimEvent = (e) => {
     channel: e.channel,
   };
   if (e.files) {
-    slim.files = e.files.map((f) => ({
-      id: f.id,
-      name: f.name,
-      mimetype: f.mimetype,
-      filetype: f.filetype,
-      url_private: f.url_private,
-      url_private_download: f.url_private_download,
-    }));
+    slim.files = e.files.map(
+      (f): SlackFile => ({
+        id: f.id,
+        name: f.name,
+        mimetype: f.mimetype,
+        filetype: f.filetype,
+        url_private: f.url_private,
+        url_private_download: f.url_private_download,
+      })
+    );
   }
   if (e.message && e.message.text) {
     slim.message = { text: e.message.text };
@@ -34,19 +37,19 @@ const slimEvent = (e) => {
   return slim;
 };
 
-const pendingTimers = {};
+const pendingTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
-const flushChannel = async (channelId) => {
+const flushChannel = async (channelId: string): Promise<void> => {
   delete pendingTimers[channelId];
   const messages = (messageHistory[channelId] || []).map(slimEvent);
   try {
     await saveChannelHistory(channelId, messages);
-  } catch (e) {
+  } catch (e: any) {
     console.log('saveChannelHistory error', channelId, e.message);
   }
 };
 
-const markDirty = (channelId) => {
+export const markDirty = (channelId: string): void => {
   if (isDM(channelId)) return;
   if (pendingTimers[channelId]) clearTimeout(pendingTimers[channelId]);
   pendingTimers[channelId] = setTimeout(
@@ -55,7 +58,7 @@ const markDirty = (channelId) => {
   );
 };
 
-const init = async () => {
+export const init = async (): Promise<void> => {
   try {
     const histories = await loadAllChannelHistories();
     let loaded = 0;
@@ -72,9 +75,7 @@ const init = async () => {
     console.log(
       `loaded message history for ${loaded} channels (purged ${purged} DM docs)`
     );
-  } catch (e) {
+  } catch (e: any) {
     console.log('messageHistory init error', e.message);
   }
 };
-
-module.exports = { init, markDirty };

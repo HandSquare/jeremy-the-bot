@@ -1,4 +1,6 @@
-const getHoursMinutesDate = () => {
+type TimerCallback = () => void | Promise<void>;
+
+const getHoursMinutesDate = (): string => {
   // produces time like 18:30 or 05:30
   return new Date()
     .toLocaleTimeString('en-US', {
@@ -10,8 +12,8 @@ const getHoursMinutesDate = () => {
 
 let time = getHoursMinutesDate();
 
-const events = {};
-const startTimer = () => {
+const events: Record<string, TimerCallback[]> = {};
+const startTimer = (): void => {
   setInterval(() => {
     time = getHoursMinutesDate();
 
@@ -24,18 +26,14 @@ const startTimer = () => {
 };
 
 // at('12:30', console.log)
-const at = (time, task) => {
+const at = (time: string, task: TimerCallback): void => {
   if (!events[time]) events[time] = [];
   events[time].push(task);
 };
 
-const getSecondsToSlackTimestamp = (ts) => {
+const getSecondsToSlackTimestamp = (ts: string): number => {
   const secondsNow = parseInt(Date.now().toString().slice(0, 10));
   return secondsNow - parseFloat(ts);
 };
 
-module.exports = {
-  at,
-  startTimer,
-  getSecondsToSlackTimestamp,
-};
+export { at, startTimer, getSecondsToSlackTimestamp };

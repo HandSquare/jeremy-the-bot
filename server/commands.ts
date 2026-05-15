@@ -1,35 +1,38 @@
-const stopword = require('stopword');
-const { web } = require('./slackClient');
-const messageHistory = require('./messageHistory');
-const { addReactionOnce } = require('./reactionUtils');
-const {
+import { removeStopwords } from 'stopword';
+import { web } from './slackClient';
+import messageHistory from './messageHistory';
+import { addReactionOnce } from './reactionUtils';
+import {
   extractImgUrl,
   getCurrentAtWork,
   getUsersCurrentlyAtWork,
   makeNiceListFromArray,
-} = require('./util');
-const { updateState } = require('./db');
-const { getSelf } = require('./self');
+} from './util';
+import { updateState } from './db';
+import { getSelf } from './self';
 
-const people = require('./people');
+import * as people from './people';
 
-const sendPageScreenshot = require('./sendPageScreenshot');
-const getDallEImage = require('./getDallEImage');
-const getImageEdit = require('./getImageEdit');
-const getVideo = require('./getVideo');
-const getChatbot = require('./getChatbot');
-const {
+import sendPageScreenshot from './sendPageScreenshot';
+import getDallEImage from './getDallEImage';
+import getImageEdit from './getImageEdit';
+import getVideo from './getVideo';
+import getChatbot from './getChatbot';
+import {
   performGoogleImageSearch,
   performGoogleTextSearch,
-} = require('./performGoogleSearch');
-const describeImage = require('./describeImage');
+} from './performGoogleSearch';
+import describeImage from './describeImage';
+import { SlackMessageEvent, SlackMessage, Command } from './types';
 
 // ----- helpers -----
 
-const messageHasImage = (msg) =>
-  msg &&
-  msg.files &&
-  msg.files.some((f) => (f.mimetype || '').startsWith('image/'));
+const messageHasImage = (msg: SlackMessageEvent | SlackMessage): boolean =>
+  !!(
+    msg &&
+    msg.files &&
+    msg.files.some((f) => (f.mimetype || '').startsWith('image/'))
+  );
 
 const VIDEO_URL_PATTERNS = [
   /instagram\.com\/(?:reel|reels|p)\/[\w-]+/i,
@@ -37,7 +40,7 @@ const VIDEO_URL_PATTERNS = [
   /(?:x|twitter)\.com\/[^/]+\/status\/\d+/i,
 ];
 
-const findVideoUrl = (text) => {
+const findVideoUrl = (text: string): string | null => {
   if (!text) return null;
   const matches = [...text.matchAll(/<(https?:\/\/[^>|]+)(?:\|[^>]*)?>/g)];
   for (const m of matches) {
@@ -46,10 +49,13 @@ const findVideoUrl = (text) => {
   return null;
 };
 
-const findLastMessageMatching = async (event, predicate) => {
+const findLastMessageMatching = async (
+  event: SlackMessageEvent,
+  predicate: (msg: SlackMessage) => boolean
+): Promise<SlackMessage | null> => {
   const selfId = getSelf()?.id;
   const inThread = !!event.thread_ts;
-  const isCandidate = (msg) => {
+  const isCandidate = (msg: SlackMessage) => {
     if (msg.ts === event.ts) return false;
     if (msg.bot_id || msg.user === selfId) return false;
     if (inThread) {
@@ -67,10 +73,10 @@ const findLastMessageMatching = async (event, predicate) => {
     if (inThread) {
       const result = await web.conversations.replies({
         channel: event.channel,
-        ts: event.thread_ts,
+        ts: event.thread_ts!,
         limit: 50,
       });
-      const messages = result.messages || [];
+      const messages = (result.messages || []) as SlackMessage[];
       for (let i = messages.length - 1; i >= 0; i--) {
         if (isCandidate(messages[i]) && predicate(messages[i]))
           return messages[i];
@@ -80,33 +86,39 @@ const findLastMessageMatching = async (event, predicate) => {
         channel: event.channel,
         limit: 50,
       });
-      const messages = result.messages || [];
+      const messages = (result.messages || []) as SlackMessage[];
       for (const msg of messages) {
         if (isCandidate(msg) && !msg.thread_ts && predicate(msg)) return msg;
       }
     }
-  } catch (e) {
+  } catch (e: any) {
     console.log('findLastMessageMatching fetch error', e.message);
   }
   return null;
 };
 
-const findLastImageMessage = (event) =>
+const findLastImageMessage = (
+  event: SlackMessageEvent
+): Promise<SlackMessage | null> =>
   findLastMessageMatching(event, messageHasImage);
 
 const LINK_REGEX =
   /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/;
 
-const messageLink = (msg) => {
+const messageLink = (msg: SlackMessage): string | null => {
   const text = msg.text || msg.message?.text;
   const m = text?.match(LINK_REGEX);
   return m ? m[1] : null;
 };
 
-const findLastLinkMessage = (event) =>
+const findLastLinkMessage = (
+  event: SlackMessageEvent
+): Promise<SlackMessage | null> =>
   findLastMessageMatching(event, (msg) => !!messageLink(msg));
 
-const findLastTextMessage = (event) =>
+const findLastTextMessage = (
+  event: SlackMessageEvent
+): Promise<SlackMessage | null> =>
   findLastMessageMatching(
     event,
     (msg) => typeof msg.text === 'string' && !!msg.text
@@ -120,7 +132,7 @@ const findLastTextMessage = (event) =>
 // First match wins. Order matters: more specific patterns must come before
 // looser fallbacks (e.g. `, edit` before `jeremy, X`).
 
-const COMMANDS = [
+const COMMANDS: Command[] = [
   {
     name: 'video-url',
     skipsAmbient: true,
@@ -166,8 +178,8 @@ const COMMANDS = [
       if (!lastMessage) return;
       getDallEImage(
         event,
-        people.substitute(lastMessage.text),
-        lastMessage.text
+        people.substitute(lastMessage.text!),
+        lastMessage.text!
       );
     },
   },
@@ -208,7 +220,7 @@ const COMMANDS = [
   {
     name: 'define',
     match: (event) =>
-      event.text.match(/, define\s+[“""]([^""”]+)[”""]\s+[“""]([^""”]+)[”""]/i),
+      event.text.match(/, define\s+["""]([^"""]+)["""]\s+["""]([^"""]+)["""]/i),
     handle: async (event, m) => {
       const name = m[1].trim();
       const description = m[2].trim();
@@ -257,29 +269,28 @@ const COMMANDS = [
       const lastMessage = await findLastTextMessage(event);
       if (!lastMessage) return;
       await addReactionOnce(event.channel, event.ts, 'eyes');
-      performGoogleImageSearch(event, lastMessage.text);
+      performGoogleImageSearch(event, lastMessage.text!);
     },
   },
   {
     name: 'whats-this-or-that',
-    match: (event) => event.text.match(/[Ww]hat[\'’]?s (this|that)/),
+    match: (event) => event.text.match(/[Ww]hat[\'']?s (this|that)/),
     handle: async (event, m) => {
       const isThis = m[1].toLowerCase() === 'this';
       await web.reactions.add({
         channel: event.channel,
         timestamp: event.ts,
         name: 'eyes',
-        thread_ts: event.ts,
       });
-      // "what's this" → image must be attached to this message.
-      // "what's that" → look at prior messages (thread-aware).
+      // "what's this" -> image must be attached to this message.
+      // "what's that" -> look at prior messages (thread-aware).
       const sourceMessage = isThis
         ? messageHasImage(event)
           ? event
           : null
         : await findLastImageMessage(event);
       if (sourceMessage) {
-        const imageFile = sourceMessage.files.find((f) =>
+        const imageFile = sourceMessage.files!.find((f) =>
           (f.mimetype || '').startsWith('image/')
         );
         describeImage(event, imageFile);
@@ -292,9 +303,7 @@ const COMMANDS = [
       if (url) {
         describeImage(event, undefined, url);
       } else if (lastMessage?.text) {
-        const query = stopword
-          .removeStopwords(lastMessage.text.split(' '))
-          .join(' ');
+        const query = removeStopwords(lastMessage.text.split(' ')).join(' ');
         await performGoogleImageSearch(event, query);
       }
     },
@@ -386,7 +395,7 @@ const COMMANDS = [
       const userNamesAtWork = (await getUsersCurrentlyAtWork()).map(
         (u) => u.profile.display_name
       );
-      let msg;
+      let msg: string;
       if (userNamesAtWork.length === 0) {
         msg = 'There is no one at work.';
       } else if (userNamesAtWork.length === 1) {
@@ -409,7 +418,7 @@ const COMMANDS = [
     handle: async (event) => {
       await updateState({ [`at_work.${event.user}`]: false });
       const newCurrentWork = await getCurrentAtWork();
-      let message;
+      let message: string;
       if (newCurrentWork > 1) {
         message = `Okay. There are still *${newCurrentWork} people* at work. SafeSearch is on.`;
       } else if (newCurrentWork === 1) {
@@ -437,8 +446,8 @@ const COMMANDS = [
         (msg) =>
           msg.ts === event.thread_ts &&
           msg.subtype === 'bot_message' &&
-          (msg.user === self.id ||
-            msg.username?.toLowerCase() === self.name.toLowerCase())
+          (msg.user === self?.id ||
+            msg.username?.toLowerCase() === self?.name.toLowerCase())
       );
       return isThreadParent ? true : null;
     },
@@ -460,7 +469,9 @@ const COMMANDS = [
   },
 ];
 
-const runCommand = async (event) => {
+export const runCommand = async (
+  event: SlackMessageEvent
+): Promise<Command | null> => {
   for (const cmd of COMMANDS) {
     const m = await cmd.match(event);
     if (m) {
@@ -470,5 +481,3 @@ const runCommand = async (event) => {
   }
   return null;
 };
-
-module.exports = { runCommand };

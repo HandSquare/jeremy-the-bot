@@ -1,14 +1,15 @@
-const admin = require('firebase-admin');
-const { getFirestore } = require('firebase-admin/firestore');
+import * as admin from 'firebase-admin';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { SlackMessage } from './types';
 
-let store;
+let store: Firestore;
 
-async function startStore() {
+export async function startStore(): Promise<void> {
   const creds = {
     type: process.env.TYPE,
     project_id: process.env.PROJECT_ID,
     private_key_id: process.env.PRIVATE_KEY_ID,
-    private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
+    private_key: process.env.PRIVATE_KEY!.replace(/\\n/g, '\n'),
     client_email: process.env.CLIENT_EMAIL,
     client_id: process.env.CLIENT_ID,
     auth_uri: process.env.AUTH_URI,
@@ -18,49 +19,44 @@ async function startStore() {
   };
 
   admin.initializeApp({
-    credential: admin.credential.cert(creds),
+    credential: admin.credential.cert(creds as admin.ServiceAccount),
   });
   store = getFirestore();
   store.settings({ ignoreUndefinedProperties: true });
 }
 
-const getState = () => {
+export const getState = () => {
   return store.doc('main/state');
 };
 
-const updateState = (diff) => {
+export const updateState = (diff: Record<string, any>) => {
   return store.doc('main/state').update(diff);
 };
 
-const getStateValue = async (field) => {
+export const getStateValue = async (field: string) => {
   return (await getState().get()).get(field);
 };
 
-const loadAllChannelHistories = async () => {
+export const loadAllChannelHistories = async (): Promise<
+  Record<string, SlackMessage[]>
+> => {
   const snapshot = await store.collection('messageHistory').get();
-  const result = {};
+  const result: Record<string, SlackMessage[]> = {};
   snapshot.forEach((doc) => {
     result[doc.id] = doc.data().messages || [];
   });
   return result;
 };
 
-const saveChannelHistory = (channelId, messages) => {
+export const saveChannelHistory = (
+  channelId: string,
+  messages: SlackMessage[]
+) => {
   return store
     .doc(`messageHistory/${channelId}`)
     .set({ messages, updatedAt: Date.now() });
 };
 
-const deleteChannelHistory = (channelId) => {
+export const deleteChannelHistory = (channelId: string) => {
   return store.doc(`messageHistory/${channelId}`).delete();
-};
-
-module.exports = {
-  startStore,
-  getState,
-  getStateValue,
-  updateState,
-  loadAllChannelHistories,
-  saveChannelHistory,
-  deleteChannelHistory,
 };

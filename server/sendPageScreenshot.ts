@@ -1,10 +1,11 @@
-const { web } = require('./slackClient');
+import { web } from './slackClient';
+import { SlackMessageEvent } from './types';
 
 const THUM_BASE = 'https://image.thum.io/get/width/1280/wait/5000';
 const LOADER_SIZE_THRESHOLD = 50_000;
 const RETRY_DELAY_MS = 8_000;
 
-const fetchScreenshot = async (url) => {
+const fetchScreenshot = async (url: string): Promise<Buffer> => {
   const res = await fetch(`${THUM_BASE}/${url}`, {
     signal: AbortSignal.timeout(30_000),
   });
@@ -12,9 +13,13 @@ const fetchScreenshot = async (url) => {
   return Buffer.from(await res.arrayBuffer());
 };
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const sendPageScreenshot = async (event, url, caption) => {
+const sendPageScreenshot = async (
+  event: SlackMessageEvent,
+  url: string,
+  caption: string
+): Promise<void> => {
   try {
     let data = await fetchScreenshot(url);
     if (data.length < LOADER_SIZE_THRESHOLD) {
@@ -28,7 +33,7 @@ const sendPageScreenshot = async (event, url, caption) => {
       filename: `${caption}.png`,
       initial_comment: caption,
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error('sendPageScreenshot error:', e.message);
     await web.chat.postMessage({
       channel: event.channel,
@@ -38,4 +43,4 @@ const sendPageScreenshot = async (event, url, caption) => {
   }
 };
 
-module.exports = sendPageScreenshot;
+export default sendPageScreenshot;

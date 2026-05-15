@@ -1,16 +1,17 @@
-const stopword = require('stopword');
-const { getSelf } = require('./self');
-const messageHistory = require('./messageHistory');
-const { markDirty } = require('./messageHistoryPersistence');
-const { delay, getCurrentAtWork } = require('./util');
-const { web } = require('./slackClient');
-const { getEmojiList } = require('./emojiList');
-const { addReactionOnce } = require('./reactionUtils');
-const { updateState } = require('./db');
-const { at, getSecondsToSlackTimestamp } = require('./timer');
-const { runCommand } = require('./commands');
+import { removeStopwords } from 'stopword';
+import { getSelf } from './self';
+import messageHistory from './messageHistory';
+import { markDirty } from './messageHistoryPersistence';
+import { delay, getCurrentAtWork } from './util';
+import { web } from './slackClient';
+import { getEmojiList } from './emojiList';
+import { addReactionOnce } from './reactionUtils';
+import { updateState } from './db';
+import { at, getSecondsToSlackTimestamp } from './timer';
+import { runCommand } from './commands';
+import { SlackMessageEvent } from './types';
 
-let lastEvent;
+let lastEvent: SlackMessageEvent | undefined;
 
 at('18:30', async () => {
   const atWork = await getCurrentAtWork();
@@ -38,7 +39,7 @@ at('16:20', async () => {
 const MAX_TRACKED_CHANNELS = 100;
 const MAX_MESSAGES_PER_CHANNEL = 10;
 
-const trackMessage = (event) => {
+const trackMessage = (event: SlackMessageEvent): void => {
   if (!messageHistory[event.channel]) {
     const channels = Object.keys(messageHistory);
     if (channels.length >= MAX_TRACKED_CHANNELS) {
@@ -53,17 +54,17 @@ const trackMessage = (event) => {
   markDirty(event.channel);
 };
 
-const pickRandom = (options) =>
+const pickRandom = <T>(options: T[]): T =>
   options[Math.floor(Math.random() * options.length)];
 
 // Ambient behaviors run regardless of which command (if any) matched.
 // Only commands marked `skipsAmbient` short-circuit them.
-const runAmbient = async (event) => {
+const runAmbient = async (event: SlackMessageEvent): Promise<void> => {
   const self = getSelf();
   const channelHistory = messageHistory[event.channel] || [];
 
   // Wave when addressed
-  if (event.text.match(/[j|J]eremy/) || event.text.includes(self.id)) {
+  if (event.text.match(/[j|J]eremy/) || event.text.includes(self!.id)) {
     await addReactionOnce(event.channel, event.ts, 'wave');
   }
 
@@ -84,7 +85,7 @@ const runAmbient = async (event) => {
     (event.text.match(/[t|T]hanks/) || event.text.match(/[n|N]ice/)) &&
     !event.text.match(/[n|N]o/) &&
     prev &&
-    (prev.username === self.name || prev.user === self.id)
+    (prev.username === self!.name || prev.user === self!.id)
   ) {
     await delay(1000);
     await web.chat.postMessage({
@@ -114,7 +115,7 @@ const runAmbient = async (event) => {
 
   // Emoji reactions on keyword matches
   const emojiList = getEmojiList();
-  const wordsWithoutStopwords = stopword.removeStopwords(
+  const wordsWithoutStopwords = removeStopwords(
     event.text.toLowerCase().split(' ')
   );
   await delay(1000);
@@ -126,7 +127,7 @@ const runAmbient = async (event) => {
   }
 };
 
-module.exports = async (event) => {
+const handleMessage = async (event: SlackMessageEvent): Promise<void> => {
   trackMessage(event);
   lastEvent = event;
 
@@ -135,7 +136,7 @@ module.exports = async (event) => {
     const matched = await runCommand(event);
     if (matched?.skipsAmbient) return;
     await runAmbient(event);
-  } catch (error) {
+  } catch (error: any) {
     console.log('An error occurred', error);
     web.chat.postMessage({
       text: `error!, ${error.message}`,
@@ -144,3 +145,5 @@ module.exports = async (event) => {
     });
   }
 };
+
+export default handleMessage;
