@@ -1,4 +1,12 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+if git diff --cached --name-only | grep -q 'package-lock.json'; then
+  if grep -q 'artifactory.spotify' package-lock.json; then
+    sed -i '' 's|https://artifactory.spotify.net/artifactory/api/npm/virtual-npm/|https://registry.npmjs.org/|g' package-lock.json
+    sed -i '' 's|https://artifactory.spotify.net:443/artifactory/api/npm/virtual-npm/|https://registry.npmjs.org/|g' package-lock.json
+    git add package-lock.json
+  fi
+fi
+
 npx lint-staged

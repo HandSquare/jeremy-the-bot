@@ -90,8 +90,9 @@ const getVideo = async (
       await web.chat.postMessage({
         text: "this isn't working right now but i'll try again in a bit",
         channel: event.channel,
-        thread_ts: event.thread_ts,
+        thread_ts: event.thread_ts || event.ts,
       });
+      let succeeded = false;
       for (let attempt = 1; attempt <= 2; attempt++) {
         await sleep(GENERAL_RETRY_MS);
         try {
@@ -104,10 +105,18 @@ const getVideo = async (
           } as any;
           if (event.thread_ts) retryArgs.thread_ts = event.thread_ts;
           await web.filesUploadV2(retryArgs);
+          succeeded = true;
           break;
         } catch (retryErr: any) {
           console.log(`getVideo retry ${attempt}/2 failed:`, retryErr.message);
         }
+      }
+      if (!succeeded) {
+        await web.chat.postMessage({
+          text: "i couldn't grab that one, sorry :(",
+          channel: event.channel,
+          thread_ts: event.thread_ts || event.ts,
+        });
       }
     }
   } finally {
