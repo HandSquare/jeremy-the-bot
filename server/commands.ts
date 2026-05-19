@@ -122,7 +122,8 @@ const findLastTextMessage = (
 ): Promise<SlackMessage | null> =>
   findLastMessageMatching(
     event,
-    (msg) => typeof msg.text === 'string' && !!msg.text
+    (msg) => typeof msg.text === 'string' && !!msg.text,
+    { includeSelf: true }
   );
 
 // ----- commands -----
