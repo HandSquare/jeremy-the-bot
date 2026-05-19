@@ -27,12 +27,27 @@ const sendPageScreenshot = async (
       data = await fetchScreenshot(url);
     }
 
-    await web.filesUploadV2({
+    const threadTs = event.thread_ts || event.ts;
+    const result = await web.filesUploadV2({
       channel_id: event.channel,
       file: data,
       filename: `${caption}.png`,
       initial_comment: caption,
-    });
+      thread_ts: threadTs,
+    } as any);
+
+    const fileMsg = (result as any).files?.[0]?.shares?.public?.[
+      event.channel
+    ]?.[0];
+    if (fileMsg?.ts) {
+      await web.chat
+        .update({
+          channel: event.channel,
+          ts: fileMsg.ts,
+          reply_broadcast: true,
+        } as any)
+        .catch(() => {});
+    }
   } catch (e: any) {
     console.error('sendPageScreenshot error:', e.message);
     await web.chat.postMessage({

@@ -51,13 +51,14 @@ const findVideoUrl = (text: string): string | null => {
 
 const findLastMessageMatching = async (
   event: SlackMessageEvent,
-  predicate: (msg: SlackMessage) => boolean
+  predicate: (msg: SlackMessage) => boolean,
+  { includeSelf = false } = {}
 ): Promise<SlackMessage | null> => {
   const selfId = getSelf()?.id;
   const inThread = !!event.thread_ts;
   const isCandidate = (msg: SlackMessage) => {
     if (msg.ts === event.ts) return false;
-    if (msg.bot_id || msg.user === selfId) return false;
+    if (!includeSelf && (msg.bot_id || msg.user === selfId)) return false;
     if (inThread) {
       return msg.thread_ts === event.thread_ts || msg.ts === event.thread_ts;
     }
@@ -100,7 +101,7 @@ const findLastMessageMatching = async (
 const findLastImageMessage = (
   event: SlackMessageEvent
 ): Promise<SlackMessage | null> =>
-  findLastMessageMatching(event, messageHasImage);
+  findLastMessageMatching(event, messageHasImage, { includeSelf: true });
 
 const LINK_REGEX =
   /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/;
