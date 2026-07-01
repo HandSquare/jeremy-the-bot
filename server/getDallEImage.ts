@@ -19,7 +19,9 @@ const getDallEImage = async (
     const [response, slug] = await Promise.all([
       openai.images.generate({
         model: 'gpt-image-2',
-        prompt: query,
+        prompt: query.includes('[')
+          ? `${query}\n\nText in [brackets] describes a person's appearance. Do not render it as visible text or labels.`
+          : query,
         n: 1,
         size: '1024x1024',
         quality: 'medium',
