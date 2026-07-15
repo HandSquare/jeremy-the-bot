@@ -23,6 +23,7 @@ import {
   performGoogleTextSearch,
 } from './performGoogleSearch';
 import describeImage from './describeImage';
+import sanityCheck from './sanityCheck';
 import { SlackMessageEvent, SlackMessage, Command } from './types';
 
 // ----- helpers -----
@@ -435,6 +436,11 @@ const COMMANDS: Command[] = [
         thread_ts: event.thread_ts,
       });
     },
+  },
+  {
+    name: 'sanity-check',
+    match: (event) => (/,\s*sanity\s+check/i.test(event.text) ? true : null),
+    handle: (event) => sanityCheck(event),
   },
   // Continuation in a thread Jeremy started — must come before `jeremy-chat`.
   {

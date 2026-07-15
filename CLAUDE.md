@@ -8,7 +8,7 @@ Slack bot that responds to messages with AI-generated text, images, and link pre
 - **Deploys on**: push to `master` — Railway auto-deploys from the remote repo
 - **`railway up` and `railway redeploy`**: these deploy from LOCAL files, NOT from GitHub. To trigger a proper deploy, push to master.
 - **Railway project**: https://railway.com/project/a5fe0f01-031a-4254-96ce-a1e19cf42433
-- **TypeScript branch**: `typescript-migration` — requires `npm run build` before `npm start`
+- **Build**: `npm run build` (tsc), then `npm start`
 
 ## Architecture
 

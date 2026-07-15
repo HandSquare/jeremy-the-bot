@@ -40,22 +40,69 @@ const getSearchImage = async (
   return items[0]?.link || null;
 };
 
-const getSearchText = async (
-  query: string
-): Promise<{ title: string; link: string; snippet: string }> => {
-  // read db to see who is at work
+export interface SearchResult {
+  title: string;
+  link: string;
+  snippet: string;
+  date: string | null;
+}
+
+const METATAG_DATE_KEYS = [
+  'article:published_time',
+  'datepublished',
+  'og:article:published_time',
+  'date',
+  'publish_date',
+];
+
+const SNIPPET_DATE_RE = /^([A-Z][a-z]{2} \d{1,2}, \d{4})\s[—–-]/;
+
+const extractDate = (item: any): string | null => {
+  const metatags = item.pagemap?.metatags?.[0] as
+    | Record<string, string>
+    | undefined;
+  if (metatags) {
+    for (const key of METATAG_DATE_KEYS) {
+      const val = metatags[key];
+      if (val) {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+        }
+      }
+    }
+  }
+  const snippetMatch = item.snippet?.match(SNIPPET_DATE_RE);
+  if (snippetMatch) return snippetMatch[1];
+  return null;
+};
+
+const getSearchText = async (query: string): Promise<SearchResult> => {
+  const results = await getSearchResults(query, 1);
+  return results[0];
+};
+
+export const getSearchResults = async (
+  query: string,
+  num = 3
+): Promise<SearchResult[]> => {
   const res = await search.cse.list({
     cx: customSearchId,
     q: query,
     auth: apiKey,
+    num,
   });
 
-  const { title, link, snippet } = res.data.items![0];
-  return {
-    title: title!,
-    link: link!,
-    snippet: snippet!,
-  };
+  return (res.data.items || []).slice(0, num).map((item) => ({
+    title: item.title!,
+    link: item.link!,
+    snippet: item.snippet!,
+    date: extractDate(item),
+  }));
 };
 
 export const performGoogleImageSearch = async (
