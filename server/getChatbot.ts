@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { web } from './slackClient';
-import { getUsers } from './util';
+import { getUsers, markdownToSlack } from './util';
 import { getSelf } from './self';
 import { addReactionOnce } from './reactionUtils';
 import messageHistory from './messageHistory';
@@ -80,9 +80,7 @@ const getChatbot = async (
     });
     console.log(response);
 
-    const cleaned = response.output_text
-      .replace(/[【】][^【】]*[【】]?/g, '')
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<$2|$1>');
+    const cleaned = markdownToSlack(response.output_text);
 
     await web.chat.postMessage({
       text: cleaned,

@@ -74,6 +74,13 @@ export const makeNiceListFromArray = (arrayOfStrings: string[]): string => {
   }
 };
 
+export const markdownToSlack = (text: string): string =>
+  text
+    .replace(/[【】][^【】]*[【】]?/g, '')
+    .replace(/\s*\S*turn\dsearch\d\S*/g, '')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<$2|$1>')
+    .replace(/\*\*([^*]+)\*\*/g, '*$1*');
+
 export function extractImgUrl(text: string | undefined | null): string | null {
   if (!text) return null;
   const imageUrlPattern = /<([^>]*\.(?:jpg|gif|png|jpeg|bmp)[^>]*)>/g;
