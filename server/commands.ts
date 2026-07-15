@@ -439,8 +439,14 @@ const COMMANDS: Command[] = [
   },
   {
     name: 'sanity-check',
-    match: (event) => (/,\s*sanity\s+check/i.test(event.text) ? true : null),
-    handle: (event) => sanityCheck(event),
+    match: (event) => {
+      if (event.subtype === 'bot_message') return null;
+      const m = event.text.match(
+        /,\s*sanity\s+check(?:\s+<#([^|>]+)(?:\|[^>]*)?>)?/i
+      );
+      return m ? { targetChannel: m[1] || null } : null;
+    },
+    handle: (event, ctx) => sanityCheck(event, ctx.targetChannel),
   },
   // Continuation in a thread Jeremy started — must come before `jeremy-chat`.
   {

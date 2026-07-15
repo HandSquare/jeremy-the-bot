@@ -5,3 +5,4 @@ const token = process.env.SLACK_BOT_TOKEN!;
 
 export const rtm = new RTMClient(token);
 export const web = new WebClient(token);
+export const userWeb = new WebClient(process.env.TOKEN!);

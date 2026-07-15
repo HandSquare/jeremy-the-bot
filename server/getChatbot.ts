@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { web } from './slackClient';
 import { getUsers } from './util';
 import { getSelf } from './self';
+import { addReactionOnce } from './reactionUtils';
 import messageHistory from './messageHistory';
 import * as people from './people';
 import { SlackMessageEvent } from './types';
@@ -13,11 +14,7 @@ const getChatbot = async (
   query: string
 ): Promise<void> => {
   console.log({ event });
-  await web.reactions.add({
-    channel: event.channel,
-    timestamp: event.ts,
-    name: 'thinking_face',
-  });
+  await addReactionOnce(event.channel, event.ts, 'thinking_face');
   try {
     // Get user mappings for better context
     const users = await getUsers();
@@ -72,6 +69,7 @@ const getChatbot = async (
 
     const response = await openai.responses.create({
       model: 'gpt-5.4-mini',
+      tools: [{ type: 'web_search_preview' }],
       instructions:
         'You are Jeremy. You are a helpful assistant. You are just a regular guy and often respond with stupid puns.' +
         (isContinuation
@@ -82,8 +80,12 @@ const getChatbot = async (
     });
     console.log(response);
 
+    const cleaned = response.output_text
+      .replace(/[【】][^【】]*[【】]?/g, '')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<$2|$1>');
+
     await web.chat.postMessage({
-      text: response.output_text,
+      text: cleaned,
       channel: event.channel,
       thread_ts: event.thread_ts,
     });
