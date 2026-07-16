@@ -27,16 +27,30 @@ const getChatbot = async (
     const userHash = await getUserNameHash();
     const self = getSelf();
 
-    // Fetch real channel history from Slack API (user token — bot token
-    // lacks the *:history scopes, same reason sanityCheck uses userWeb)
-    const historyResult = await userWeb.conversations.history({
-      channel: event.channel,
-      limit: HISTORY_LIMIT,
-      latest: event.ts,
-    });
-    const channelHistory = ((historyResult.messages || []) as SlackMessage[])
-      .filter((m) => m.text)
-      .reverse();
+    // Fetch real history from Slack API (user token — bot token lacks the
+    // *:history scopes, same reason sanityCheck uses userWeb). In a thread,
+    // the thread replies ARE the conversation — not the channel's messages.
+    let channelHistory: SlackMessage[];
+    if (event.thread_ts) {
+      const result = await userWeb.conversations.replies({
+        channel: event.channel,
+        ts: event.thread_ts,
+        limit: HISTORY_LIMIT,
+      });
+      // replies come oldest-first and include the triggering message
+      channelHistory = ((result.messages || []) as SlackMessage[]).filter(
+        (m) => m.text && m.ts !== event.ts
+      );
+    } else {
+      const result = await userWeb.conversations.history({
+        channel: event.channel,
+        limit: HISTORY_LIMIT,
+        latest: event.ts,
+      });
+      channelHistory = ((result.messages || []) as SlackMessage[])
+        .filter((m) => m.text)
+        .reverse();
+    }
 
     const formattedHistory = formatTranscript(channelHistory, userHash, self);
 
@@ -47,7 +61,10 @@ const getChatbot = async (
     const currentUserName =
       userHash[event.user!] || event.username || event.user || 'user';
     const resolvedQuery = resolveUserMentions(query, userHash);
-    const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\n${currentUserName}: ${resolvedQuery}\nJeremy:`;
+    const setting = event.thread_ts
+      ? 'this Slack thread (the whole thread, oldest first)'
+      : 'this Slack channel';
+    const prompt = `Here is recent conversation history from ${setting} (most recent last):\n${formattedHistory}\n\n${currentUserName}: ${resolvedQuery}\nJeremy:`;
 
     const peopleDict = people.all();
     const peopleContext = Object.keys(peopleDict).length
