@@ -35,6 +35,9 @@ const messageHasImage = (msg: SlackMessageEvent | SlackMessage): boolean =>
     msg.files.some((f) => (f.mimetype || '').startsWith('image/'))
   );
 
+// How far back to look when hunting for a previous image/link/text message.
+const HISTORY_LOOKBACK_LIMIT = 50;
+
 const VIDEO_URL_PATTERNS = [
   /instagram\.com\/(?:reel|reels|p)\/[\w-]+/i,
   /(?:vm|vt|www|m)?\.?tiktok\.com\//i,
@@ -76,7 +79,7 @@ const findLastMessageMatching = async (
       const result = await web.conversations.replies({
         channel: event.channel,
         ts: event.thread_ts!,
-        limit: 50,
+        limit: HISTORY_LOOKBACK_LIMIT,
       });
       const messages = (result.messages || []) as SlackMessage[];
       for (let i = messages.length - 1; i >= 0; i--) {
@@ -86,7 +89,7 @@ const findLastMessageMatching = async (
     } else {
       const result = await web.conversations.history({
         channel: event.channel,
-        limit: 50,
+        limit: HISTORY_LOOKBACK_LIMIT,
       });
       const messages = (result.messages || []) as SlackMessage[];
       for (const msg of messages) {
@@ -280,11 +283,7 @@ const COMMANDS: Command[] = [
     match: (event) => event.text.match(/[Ww]hat[\'']?s (this|that)/),
     handle: async (event, m) => {
       const isThis = m[1].toLowerCase() === 'this';
-      await web.reactions.add({
-        channel: event.channel,
-        timestamp: event.ts,
-        name: 'eyes',
-      });
+      await addReactionOnce(event.channel, event.ts, 'eyes');
       // "what's this" -> image must be attached to this message.
       // "what's that" -> look at prior messages (thread-aware).
       const sourceMessage = isThis
@@ -396,7 +395,7 @@ const COMMANDS: Command[] = [
     match: (event) => (event.text === 'Who is at work?' ? true : null),
     handle: async (event) => {
       const userNamesAtWork = (await getUsersCurrentlyAtWork()).map(
-        (u) => u.profile.display_name
+        (u) => u.profile.display_name || u.profile.real_name || u.name
       );
       let msg: string;
       if (userNamesAtWork.length === 0) {

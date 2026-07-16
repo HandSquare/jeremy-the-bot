@@ -1,11 +1,18 @@
 import OpenAI from 'openai';
-import { web } from './slackClient';
-import { getUsers, markdownToSlack } from './util';
+import { web, userWeb } from './slackClient';
+import {
+  getUserNameHash,
+  resolveUserMentions,
+  formatTranscript,
+  isJeremyMessage,
+  markdownToSlack,
+} from './util';
 import { getSelf } from './self';
 import { addReactionOnce } from './reactionUtils';
-import messageHistory from './messageHistory';
 import * as people from './people';
-import { SlackMessageEvent } from './types';
+import { SlackMessage, SlackMessageEvent } from './types';
+
+const HISTORY_LIMIT = 50;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -17,46 +24,30 @@ const getChatbot = async (
   await addReactionOnce(event.channel, event.ts, 'thinking_face');
   try {
     // Get user mappings for better context
-    const users = await getUsers();
-    const userHash = users.reduce((prev, curr) => {
-      prev[curr.id] = curr.name;
-      return prev;
-    }, {} as Record<string, string>);
-
+    const userHash = await getUserNameHash();
     const self = getSelf();
 
-    // Build channel-specific history context
-    const channelHistory = (messageHistory[event.channel] || [])
-      .filter((m) => !!m && typeof m.text === 'string')
-      .slice(0, 10)
+    // Fetch real channel history from Slack API (user token — bot token
+    // lacks the *:history scopes, same reason sanityCheck uses userWeb)
+    const historyResult = await userWeb.conversations.history({
+      channel: event.channel,
+      limit: HISTORY_LIMIT,
+      latest: event.ts,
+    });
+    const channelHistory = ((historyResult.messages || []) as SlackMessage[])
+      .filter((m) => m.text)
       .reverse();
 
-    const formattedHistory = channelHistory
-      .map((m) => {
-        const isJeremy =
-          m.subtype === 'bot_message' &&
-          (m.user === self?.id ||
-            m.username?.toLowerCase() === self?.name.toLowerCase());
-        const author = isJeremy
-          ? 'Jeremy'
-          : userHash[m.user!] || m.username || m.user || 'user';
-        return `${author}: ${m.text}`;
-      })
-      .join('\n');
+    const formattedHistory = formatTranscript(channelHistory, userHash, self);
 
     const isContinuation =
       Boolean(event.thread_ts) ||
-      channelHistory.some(
-        (m) =>
-          m &&
-          m.subtype === 'bot_message' &&
-          (m.user === self?.id ||
-            m.username?.toLowerCase() === self?.name.toLowerCase())
-      );
+      channelHistory.some((m) => isJeremyMessage(m, self));
 
     const currentUserName =
       userHash[event.user!] || event.username || event.user || 'user';
-    const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\n${currentUserName}: ${query}\nJeremy:`;
+    const resolvedQuery = resolveUserMentions(query, userHash);
+    const prompt = `Here is recent conversation history from this Slack channel (most recent last):\n${formattedHistory}\n\n${currentUserName}: ${resolvedQuery}\nJeremy:`;
 
     const peopleDict = people.all();
     const peopleContext = Object.keys(peopleDict).length

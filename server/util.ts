@@ -2,12 +2,13 @@ import { getStateValue } from './db';
 import http from 'http';
 import https from 'https';
 import { web } from './slackClient';
+import { SlackMessage, SlackSelf } from './types';
 
 // Slack user type — just the fields we actually use
 interface SlackUser {
   id: string;
   name: string;
-  profile: { display_name: string };
+  profile: { display_name: string; real_name: string };
 }
 
 let users: SlackUser[] | undefined = undefined; // dumb memoizer
@@ -18,6 +19,45 @@ export const getUsers = async (): Promise<SlackUser[]> => {
   }
   return users;
 };
+
+/** Map of user ID -> best human-readable name (display name > real name > handle). */
+export const getUserNameHash = async (): Promise<Record<string, string>> => {
+  const allUsers = await getUsers();
+  return allUsers.reduce((prev, curr) => {
+    prev[curr.id] =
+      curr.profile.display_name || curr.profile.real_name || curr.name;
+    return prev;
+  }, {} as Record<string, string>);
+};
+
+/** Replace raw <@U12345> mentions with human-readable names. */
+export const resolveUserMentions = (
+  text: string,
+  userHash: Record<string, string>
+): string => text.replace(/<@(U[A-Z0-9]+)>/g, (_, id) => userHash[id] || id);
+
+export const isJeremyMessage = (
+  m: SlackMessage,
+  self: SlackSelf | undefined
+): boolean =>
+  m.subtype === 'bot_message' &&
+  (m.user === self?.id ||
+    m.username?.toLowerCase() === self?.name.toLowerCase());
+
+/** Format messages as an "Author: text" transcript for LLM prompts. */
+export const formatTranscript = (
+  messages: SlackMessage[],
+  userHash: Record<string, string>,
+  self: SlackSelf | undefined
+): string =>
+  messages
+    .map((m) => {
+      const author = isJeremyMessage(m, self)
+        ? 'Jeremy'
+        : userHash[m.user!] || m.username || m.user || 'user';
+      return `${author}: ${resolveUserMentions(m.text || '', userHash)}`;
+    })
+    .join('\n');
 
 export const delay = (time: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, time));

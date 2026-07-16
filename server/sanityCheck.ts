@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { web, userWeb } from './slackClient';
-import { getUsers, markdownToSlack } from './util';
+import { getUserNameHash, formatTranscript, markdownToSlack } from './util';
 import { getSelf } from './self';
 import { addReactionOnce } from './reactionUtils';
 import messageHistory from './messageHistory';
@@ -14,12 +14,7 @@ const GAP_THRESHOLD_SEC = 10 * 60 * 60; // 10 hours
 const buildConversationContext = async (
   event: SlackMessageEvent
 ): Promise<string> => {
-  const users = await getUsers();
-  const userHash = users.reduce((prev, curr) => {
-    prev[curr.id] = curr.name;
-    return prev;
-  }, {} as Record<string, string>);
-
+  const userHash = await getUserNameHash();
   const self = getSelf();
 
   let messages: SlackMessage[];
@@ -59,18 +54,7 @@ const buildConversationContext = async (
     recent.unshift(filtered[i]);
   }
 
-  return recent
-    .map((m) => {
-      const isJeremy =
-        m.subtype === 'bot_message' &&
-        (m.user === self?.id ||
-          m.username?.toLowerCase() === self?.name.toLowerCase());
-      const author = isJeremy
-        ? 'Jeremy'
-        : userHash[m.user!] || m.username || m.user || 'user';
-      return `${author}: ${m.text}`;
-    })
-    .join('\n');
+  return formatTranscript(recent, userHash, self);
 };
 
 const sanityCheck = async (
