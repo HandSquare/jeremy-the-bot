@@ -80,7 +80,7 @@ const sanityCheck = async (
     }
 
     const response = await openai.responses.create({
-      model: 'gpt-5.4-mini',
+      model: 'gpt-5.6-luna',
       tools: [{ type: 'web_search_preview' }],
       instructions:
         'You are Jeremy, a helpful Slack bot doing a sanity check on a conversation. ' +

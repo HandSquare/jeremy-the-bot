@@ -1,11 +1,12 @@
 import { removeStopwords } from 'stopword';
-import { web } from './slackClient';
+import { web, userWeb } from './slackClient';
 import messageHistory from './messageHistory';
 import { addReactionOnce } from './reactionUtils';
 import {
   extractImgUrl,
   getCurrentAtWork,
   getUsersCurrentlyAtWork,
+  isJeremyMessage,
   makeNiceListFromArray,
 } from './util';
 import { updateState } from './db';
@@ -450,19 +451,36 @@ const COMMANDS: Command[] = [
   // Continuation in a thread Jeremy started — must come before `jeremy-chat`.
   {
     name: 'thread-continuation',
-    match: (event) => {
+    match: async (event) => {
       if (!event.thread_ts) return null;
       if (event.subtype === 'bot_message') return null;
       const self = getSelf();
-      const threadHistory = messageHistory[event.channel] || [];
-      const isThreadParent = threadHistory.find(
-        (msg) =>
-          msg.ts === event.thread_ts &&
-          msg.subtype === 'bot_message' &&
-          (msg.user === self?.id ||
-            msg.username?.toLowerCase() === self?.name.toLowerCase())
+
+      // Fast path: parent is still in the in-memory buffer
+      const localParent = (messageHistory[event.channel] || []).find(
+        (msg) => msg.ts === event.thread_ts
       );
-      return isThreadParent ? true : null;
+      if (localParent) return isJeremyMessage(localParent, self) ? true : null;
+
+      // Buffer miss (parent evicted or restart) — ask Slack for the parent.
+      // User token: bot token lacks the *:history scopes.
+      try {
+        const result = await userWeb.conversations.replies({
+          channel: event.channel,
+          ts: event.thread_ts,
+          limit: 1,
+        });
+        const parent = (result.messages || [])[0] as SlackMessage | undefined;
+        if (!parent) return null;
+        // History API bot messages may carry bot_id without a bot_message
+        // subtype, so check the bot user id directly too.
+        return isJeremyMessage(parent, self) || parent.user === self?.id
+          ? true
+          : null;
+      } catch (e: any) {
+        console.log('thread-continuation parent fetch error', e.message);
+        return null;
+      }
     },
     handle: (event) => {
       getChatbot(event, event.text);
