@@ -23,7 +23,9 @@ const getDallEImage = async (
           ? `${query}\n\nText in [brackets] describes a person's appearance. Do not render it as visible text or labels.`
           : query,
         n: 1,
-        size: '1024x1024',
+        // 'auto' lets the model pick square/portrait/landscape from the prompt
+        // (e.g. poster -> 1024x1536, album art -> 1024x1024, landscape photo -> 1536x1024)
+        size: 'auto',
         quality: 'medium',
       }),
       generateSlug(slugInput),
