@@ -456,11 +456,18 @@ const COMMANDS: Command[] = [
       if (event.subtype === 'bot_message') return null;
       const self = getSelf();
 
-      // Fast path: parent is still in the in-memory buffer
+      // Fast path: parent is still in the in-memory buffer. Like the API
+      // fallback below, accept bot user id directly — Jeremy's own messages
+      // can arrive without the bot_message subtype.
       const localParent = (messageHistory[event.channel] || []).find(
         (msg) => msg.ts === event.thread_ts
       );
-      if (localParent) return isJeremyMessage(localParent, self) ? true : null;
+      if (localParent) {
+        return isJeremyMessage(localParent, self) ||
+          localParent.user === self?.id
+          ? true
+          : null;
+      }
 
       // Buffer miss (parent evicted or restart) — ask Slack for the parent.
       // User token: bot token lacks the *:history scopes.
