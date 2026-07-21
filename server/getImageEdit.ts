@@ -53,7 +53,9 @@ const getImageEdit = async (
       openai.images.edit({
         model: 'gpt-image-2',
         image: images.length === 1 ? images[0] : (images as any),
-        prompt,
+        prompt: prompt.includes('[')
+          ? `${prompt}\n\nText in [brackets] describes a person's appearance. Do not render it as visible text or labels.`
+          : prompt,
         n: 1,
         size: 'auto',
         quality: 'medium',
