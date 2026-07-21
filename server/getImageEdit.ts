@@ -55,7 +55,7 @@ const getImageEdit = async (
         image: images.length === 1 ? images[0] : (images as any),
         prompt,
         n: 1,
-        size: '1024x1024',
+        size: 'auto',
         quality: 'medium',
       }),
       generateSlug(slugInput),
