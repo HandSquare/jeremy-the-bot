@@ -2,6 +2,7 @@ import axios from 'axios';
 import OpenAI from 'openai';
 import { web } from './slackClient';
 import generateSlug from './generateSlug';
+import * as people from './people';
 import { SlackMessageEvent, SlackFile, SlackMessage } from './types';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -54,8 +55,8 @@ const getImageEdit = async (
         model: 'gpt-image-2',
         image: images.length === 1 ? images[0] : (images as any),
         prompt: prompt.includes('[')
-          ? `${prompt}\n\nText in [brackets] describes a person's appearance. Do not render it as visible text or labels.`
-          : prompt,
+          ? `${people.context()}${prompt}\n\nText in [brackets] describes a person's appearance. Do not render it as visible text or labels.`
+          : `${people.context()}${prompt}`,
         n: 1,
         size: 'auto',
         quality: 'medium',

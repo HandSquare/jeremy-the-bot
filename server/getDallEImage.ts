@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { web } from './slackClient';
 import generateSlug from './generateSlug';
+import * as people from './people';
 import { SlackMessageEvent } from './types';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -20,8 +21,8 @@ const getDallEImage = async (
       openai.images.generate({
         model: 'gpt-image-2',
         prompt: query.includes('[')
-          ? `${query}\n\nText in [brackets] describes a person's appearance. Do not render it as visible text or labels.`
-          : query,
+          ? `${people.context()}${query}\n\nText in [brackets] describes a person's appearance. Do not render it as visible text or labels.`
+          : `${people.context()}${query}`,
         n: 1,
         // 'auto' lets the model pick square/portrait/landscape from the prompt
         // (e.g. poster -> 1024x1536, album art -> 1024x1024, landscape photo -> 1536x1024)

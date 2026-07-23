@@ -59,4 +59,14 @@ export const substitute = (text: string): string => {
   });
 };
 
+export const context = (): string => {
+  const names = Object.keys(cache);
+  if (names.length === 0) return '';
+  return (
+    'People you know: ' +
+    names.map((n) => `${n} is ${cache[n]}`).join('; ') +
+    '.\n\n'
+  );
+};
+
 export const all = (): Record<string, string> => ({ ...cache });
