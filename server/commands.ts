@@ -185,7 +185,7 @@ const COMMANDS: Command[] = [
       if (!lastMessage) return;
       getDallEImage(
         event,
-        people.substitute(lastMessage.text!),
+        people.resolveImagePrompt(lastMessage.text!),
         lastMessage.text!
       );
     },
@@ -195,7 +195,7 @@ const COMMANDS: Command[] = [
     match: (event) => event.text.match(/, generate (.*)/),
     handle: (event, m) => {
       const original = m[1];
-      const prompt = people.substitute(original);
+      const prompt = people.resolveImagePrompt(original);
       if (messageHasImage(event)) getImageEdit(event, event, prompt, original);
       else getDallEImage(event, prompt, original);
     },
@@ -219,7 +219,7 @@ const COMMANDS: Command[] = [
       getImageEdit(
         event,
         sourceMessage,
-        `edit ${people.substitute(original)}`,
+        people.resolveImagePrompt(`edit ${original}`),
         original
       );
     },
@@ -237,7 +237,11 @@ const COMMANDS: Command[] = [
         channel: event.channel,
         thread_ts: event.thread_ts,
       });
-      getDallEImage(event, `a portrait of ${description}`, name);
+      getDallEImage(
+        event,
+        people.resolveImagePrompt(`a portrait of ${description}`),
+        name
+      );
     },
   },
   {
