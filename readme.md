@@ -13,7 +13,7 @@ Most commands are triggered by a leading comma in the message (e.g. `, generate 
 
 ### Images
 
-- `, generate <prompt>` — generate an image with `gpt-image-2`. If you attach an image to the same message, edits that image instead.
+- `, generate <prompt>` — generate an image with `gpt-image-2.5-sunburst`. If you attach an image to the same message, edits that image instead.
 - `, edit <prompt>` — edit the most recent image in the channel or thread, or an image attached to the same message. Slack uploads, Jeremy's generated images, and direct/unfurled image links are supported; previous-image lookup uses Slack channel/thread history, with local memory as a fallback.
 - `, enhance` — zoom into the center of the most recent image. (RIP CSI joke.)
 - `what's this` — describe an image attached to the same message.

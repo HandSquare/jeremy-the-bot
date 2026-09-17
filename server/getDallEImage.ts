@@ -18,7 +18,7 @@ const getDallEImage = async (
   try {
     const [response, slug] = await Promise.all([
       openai.images.generate({
-        model: 'gpt-image-2',
+        model: 'gpt-image-2.5-sunburst',
         prompt: query,
         n: 1,
         // 'auto' lets the model pick square/portrait/landscape from the prompt

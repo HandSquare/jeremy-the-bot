@@ -73,7 +73,7 @@ const getImageEdit = async (
 
     const [response, slug] = await Promise.all([
       openai.images.edit({
-        model: 'gpt-image-2',
+        model: 'gpt-image-2.5-sunburst',
         image: images.length === 1 ? images[0] : (images as any),
         prompt: prompt,
         n: 1,
