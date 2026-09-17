@@ -37,6 +37,21 @@ export const getStateValue = async (field: string) => {
   return (await getState().get()).get(field);
 };
 
+export const claimStateCooldown = async (
+  field: string,
+  cooldownMs: number
+): Promise<boolean> => {
+  const ref = store.doc('main/state');
+  return store.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const lastClaimedAt = Number(snapshot.get(field)) || 0;
+    const now = Date.now();
+    if (now - lastClaimedAt < cooldownMs) return false;
+    transaction.update(ref, { [field]: now });
+    return true;
+  });
+};
+
 export const loadAllChannelHistories = async (): Promise<
   Record<string, SlackMessage[]>
 > => {

@@ -10,6 +10,7 @@ import { updateState } from './db';
 import { at, getSecondsToSlackTimestamp } from './timer';
 import { runCommand } from './commands';
 import { SlackMessageEvent } from './types';
+import maybeGenerateAmusingImage from './maybeGenerateAmusingImage';
 
 let lastEvent: SlackMessageEvent | undefined;
 
@@ -136,6 +137,7 @@ const handleMessage = async (event: SlackMessageEvent): Promise<void> => {
     const matched = await runCommand(event);
     if (matched?.skipsAmbient) return;
     await runAmbient(event);
+    if (!matched) await maybeGenerateAmusingImage(event);
   } catch (error: any) {
     console.log('An error occurred', error);
     web.chat.postMessage({

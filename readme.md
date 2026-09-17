@@ -22,6 +22,8 @@ Most commands are triggered by a leading comma in the message (e.g. `, generate 
 
 Filenames are auto-summarized to a short slug via `gpt-5-nano` so Slack doesn't truncate long prompts.
 
+Jeremy also evaluates eligible conversation messages for exceptionally visual jokes. This ambient behavior uses `gpt-5.4-nano` and has a persistent global three-day cooldown, so unsolicited images remain rare across all channels.
+
 ### People dictionary
 
 Define aliases that get substituted into image prompts and injected into chat context. Useful for memes of each other.

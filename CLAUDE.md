@@ -27,6 +27,7 @@ Slack bot that responds to messages with AI-generated text, images, and link pre
 - `server/slackClient.ts` — RTM + Web client setup
 - `server/getDallEImage.ts` — image generation (OpenAI `gpt-image-2.5-sunburst`)
 - `server/getImageEdit.ts` — image editing (OpenAI `gpt-image-2.5-sunburst`)
+- `server/maybeGenerateAmusingImage.ts` — rare ambient image decisions (`gpt-5.4-nano`, global three-day cooldown)
 - `server/getChatbot.ts` — chat responses (OpenAI `gpt-5.6-luna`)
 - `server/describeImage.ts` — image description (OpenAI `gpt-5.4-mini`)
 - `server/generateSlug.ts` — short filename slugs (OpenAI `gpt-5.4-nano`)
