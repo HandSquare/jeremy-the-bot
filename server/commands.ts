@@ -27,6 +27,7 @@ import describeImage from './describeImage';
 import sanityCheck from './sanityCheck';
 import { SlackMessageEvent, SlackMessage, Command } from './types';
 import { getMessageImageSources } from './imageSources';
+import { isTopLevelMessage } from './slackMessages';
 
 // ----- helpers -----
 
@@ -35,11 +36,6 @@ const messageHasImage = (msg: SlackMessageEvent | SlackMessage): boolean =>
 
 // How far back to look when hunting for a previous image/link/text message.
 const HISTORY_LOOKBACK_LIMIT = 50;
-
-// Slack may set thread_ts to a message's own ts when a top-level message has
-// replies. Only a different thread_ts means the message is itself a reply.
-const isTopLevelMessage = (msg: SlackMessage): boolean =>
-  !msg.thread_ts || msg.thread_ts === msg.ts;
 
 const VIDEO_URL_PATTERNS = [
   /instagram\.com\/(?:reel|reels|p)\/[\w-]+/i,

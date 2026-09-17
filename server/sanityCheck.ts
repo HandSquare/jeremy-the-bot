@@ -5,6 +5,7 @@ import { getSelf } from './self';
 import { addReactionOnce } from './reactionUtils';
 import messageHistory from './messageHistory';
 import { SlackMessage, SlackMessageEvent } from './types';
+import { isTopLevelMessage } from './slackMessages';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -32,7 +33,7 @@ const buildConversationContext = async (
         limit: MAX_HISTORY,
       });
       messages = ((result.messages || []) as SlackMessage[])
-        .filter((m) => !m.thread_ts)
+        .filter(isTopLevelMessage)
         .reverse();
     }
   } catch (e: any) {
