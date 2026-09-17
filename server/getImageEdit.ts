@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { web } from './slackClient';
 import generateSlug from './generateSlug';
 import { SlackMessageEvent, SlackFile, SlackMessage } from './types';
+import { getMessageImageSources, MessageImageSource } from './imageSources';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -13,6 +14,34 @@ const downloadSlackFile = async (file: SlackFile): Promise<Buffer> => {
     headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
   });
   return Buffer.from(resp.data);
+};
+
+const downloadImage = async (
+  source: MessageImageSource,
+  index: number
+): Promise<ReturnType<typeof OpenAI.toFile>> => {
+  if (source.kind === 'slack-file') {
+    const file = source.file;
+    const buf = await downloadSlackFile(file);
+    const ext = (file.filetype || 'png').toLowerCase();
+    const filename = `${file.id || `image-${index}`}.${ext}`;
+    return OpenAI.toFile(buf, filename, { type: file.mimetype });
+  }
+
+  const response = await axios.get(source.url, {
+    responseType: 'arraybuffer',
+    timeout: 15_000,
+  });
+  const contentType = String(response.headers['content-type'] || '')
+    .split(';')[0]
+    .trim();
+  if (!contentType.startsWith('image/')) {
+    throw new Error('the previous link did not return an image');
+  }
+  const ext = contentType.split('/')[1] || 'png';
+  return OpenAI.toFile(Buffer.from(response.data), `image-${index}.${ext}`, {
+    type: contentType,
+  });
 };
 
 const getImageEdit = async (
@@ -28,10 +57,8 @@ const getImageEdit = async (
   });
 
   try {
-    const files = (sourceMessage.files || []).filter((f) =>
-      (f.mimetype || '').startsWith('image/')
-    );
-    if (files.length === 0) {
+    const sources = getMessageImageSources(sourceMessage);
+    if (sources.length === 0) {
       await web.chat.postMessage({
         text: "i don't see an image to edit",
         channel: event.channel,
@@ -41,12 +68,7 @@ const getImageEdit = async (
     }
 
     const images = await Promise.all(
-      files.map(async (f) => {
-        const buf = await downloadSlackFile(f);
-        const ext = (f.filetype || 'png').toLowerCase();
-        const filename = `${f.id || 'image'}.${ext}`;
-        return OpenAI.toFile(buf, filename, { type: f.mimetype });
-      })
+      sources.map((source, index) => downloadImage(source, index))
     );
 
     const [response, slug] = await Promise.all([

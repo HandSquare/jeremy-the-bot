@@ -26,15 +26,12 @@ import {
 import describeImage from './describeImage';
 import sanityCheck from './sanityCheck';
 import { SlackMessageEvent, SlackMessage, Command } from './types';
+import { getMessageImageSources } from './imageSources';
 
 // ----- helpers -----
 
 const messageHasImage = (msg: SlackMessageEvent | SlackMessage): boolean =>
-  !!(
-    msg &&
-    msg.files &&
-    msg.files.some((f) => (f.mimetype || '').startsWith('image/'))
-  );
+  !!msg && getMessageImageSources(msg).length > 0;
 
 // How far back to look when hunting for a previous image/link/text message.
 const HISTORY_LOOKBACK_LIMIT = 50;
@@ -57,7 +54,7 @@ const findVideoUrl = (text: string): string | null => {
 const findLastMessageMatching = async (
   event: SlackMessageEvent,
   predicate: (msg: SlackMessage) => boolean,
-  { includeSelf = false } = {}
+  { includeSelf = false, preferHistory = false } = {}
 ): Promise<SlackMessage | null> => {
   const selfId = getSelf()?.id;
   const inThread = !!event.thread_ts;
@@ -70,14 +67,9 @@ const findLastMessageMatching = async (
     return !msg.thread_ts;
   };
 
-  const local = (messageHistory[event.channel] || []).find(
-    (m) => isCandidate(m) && predicate(m)
-  );
-  if (local) return local;
-
-  try {
+  const findInSlackHistory = async (): Promise<SlackMessage | null> => {
     if (inThread) {
-      const result = await web.conversations.replies({
+      const result = await userWeb.conversations.replies({
         channel: event.channel,
         ts: event.thread_ts!,
         limit: HISTORY_LOOKBACK_LIMIT,
@@ -88,7 +80,7 @@ const findLastMessageMatching = async (
           return messages[i];
       }
     } else {
-      const result = await web.conversations.history({
+      const result = await userWeb.conversations.history({
         channel: event.channel,
         limit: HISTORY_LOOKBACK_LIMIT,
       });
@@ -97,8 +89,29 @@ const findLastMessageMatching = async (
         if (isCandidate(msg) && !msg.thread_ts && predicate(msg)) return msg;
       }
     }
-  } catch (e: any) {
-    console.log('findLastMessageMatching fetch error', e.message);
+    return null;
+  };
+
+  if (preferHistory) {
+    try {
+      const historyMatch = await findInSlackHistory();
+      if (historyMatch) return historyMatch;
+    } catch (e: any) {
+      console.log('findLastMessageMatching fetch error', e.message);
+    }
+  }
+
+  const local = (messageHistory[event.channel] || []).find(
+    (m) => isCandidate(m) && predicate(m)
+  );
+  if (local) return local;
+
+  if (!preferHistory) {
+    try {
+      return await findInSlackHistory();
+    } catch (e: any) {
+      console.log('findLastMessageMatching fetch error', e.message);
+    }
   }
   return null;
 };
@@ -106,7 +119,10 @@ const findLastMessageMatching = async (
 const findLastImageMessage = (
   event: SlackMessageEvent
 ): Promise<SlackMessage | null> =>
-  findLastMessageMatching(event, messageHasImage, { includeSelf: true });
+  findLastMessageMatching(event, messageHasImage, {
+    includeSelf: true,
+    preferHistory: true,
+  });
 
 const LINK_REGEX =
   /<(https?:\/\/[\w-]+(?:\.[\w]+)+(?:\/[\w-?=%&@$#_.+]+)*\/?)(?:\|((?:[^>])+))?>/;
@@ -297,10 +313,12 @@ const COMMANDS: Command[] = [
           : null
         : await findLastImageMessage(event);
       if (sourceMessage) {
-        const imageFile = sourceMessage.files!.find((f) =>
-          (f.mimetype || '').startsWith('image/')
+        const source = getMessageImageSources(sourceMessage)[0];
+        describeImage(
+          event,
+          source.kind === 'slack-file' ? source.file : undefined,
+          source.kind === 'url' ? source.url : undefined
         );
-        describeImage(event, imageFile);
         return;
       }
       const lastMessage = await findLastTextMessage(event);

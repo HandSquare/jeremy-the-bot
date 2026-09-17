@@ -8,6 +8,12 @@ export interface SlackFile {
   url_private_download?: string;
 }
 
+/** Image-bearing fields Slack adds for unfurled links. */
+export interface SlackAttachment {
+  image_url?: string;
+  thumb_url?: string;
+}
+
 /** A Slack message stored in channel history. */
 export interface SlackMessage {
   ts: string;
@@ -19,6 +25,7 @@ export interface SlackMessage {
   channel?: string;
   bot_id?: string;
   files?: SlackFile[];
+  attachments?: SlackAttachment[];
   message?: { text: string };
 }
 
@@ -34,6 +41,7 @@ export interface SlackMessageEvent {
   thread_ts?: string;
   bot_id?: string;
   files?: SlackFile[];
+  attachments?: SlackAttachment[];
   message?: { text: string };
 }
 

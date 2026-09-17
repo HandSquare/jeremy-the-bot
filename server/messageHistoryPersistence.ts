@@ -31,6 +31,12 @@ const slimEvent = (e: SlackMessage): SlackMessage => {
       })
     );
   }
+  if (e.attachments) {
+    slim.attachments = e.attachments.map((attachment) => ({
+      image_url: attachment.image_url,
+      thumb_url: attachment.thumb_url,
+    }));
+  }
   if (e.message && e.message.text) {
     slim.message = { text: e.message.text };
   }
