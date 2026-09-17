@@ -32,11 +32,13 @@ const getDallEImage = async (
     const base64Data = response.data![0].b64_json!;
     const data = Buffer.from(base64Data, 'base64');
 
-    await web.filesUploadV2({
+    const uploadArgs = {
       channel_id: event.channel,
       file: data,
       filename: `${slug}.png`,
-    });
+    } as any;
+    if (event.thread_ts) uploadArgs.thread_ts = event.thread_ts;
+    await web.filesUploadV2(uploadArgs);
   } catch (e: any) {
     console.log('err', e);
     await web.chat.postMessage({

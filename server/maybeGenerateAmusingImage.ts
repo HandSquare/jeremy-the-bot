@@ -27,7 +27,6 @@ export const isEligibleAutoImageMessage = (
     !event.bot_id &&
     event.subtype !== 'bot_message' &&
     event.user !== selfId &&
-    isTopLevelMessage(event) &&
     text.length >= 8 &&
     text.length <= 500 &&
     !text.startsWith(',') &&
@@ -41,7 +40,11 @@ const recentContext = (event: SlackMessageEvent): string =>
   (messageHistory[event.channel] || [])
     .filter(
       (message: SlackMessage) =>
-        isTopLevelMessage(message) && typeof message.text === 'string'
+        typeof message.text === 'string' &&
+        (event.thread_ts
+          ? message.ts === event.thread_ts ||
+            message.thread_ts === event.thread_ts
+          : isTopLevelMessage(message))
     )
     .slice(0, CONTEXT_MESSAGES)
     .reverse()
