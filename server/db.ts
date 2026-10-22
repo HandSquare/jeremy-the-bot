@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+import { initializeApp, cert, ServiceAccount } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { SlackMessage } from './types';
 
@@ -18,8 +18,8 @@ export async function startStore(): Promise<void> {
     client_x509_cert_url: process.env.CLIENT_X509_CERT_URL,
   };
 
-  admin.initializeApp({
-    credential: admin.credential.cert(creds as admin.ServiceAccount),
+  initializeApp({
+    credential: cert(creds as ServiceAccount),
   });
   store = getFirestore();
   store.settings({ ignoreUndefinedProperties: true });
