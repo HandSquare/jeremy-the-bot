@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getStateValue, updateState } from './db';
 
 let cache: Record<string, string> = {};
@@ -36,7 +36,7 @@ export const remove = async (name: string): Promise<boolean> => {
   if (!key) return false;
   delete cache[key];
   await updateState({
-    [`people.${key}`]: admin.firestore.FieldValue.delete(),
+    [`people.${key}`]: FieldValue.delete(),
   });
   return true;
 };
