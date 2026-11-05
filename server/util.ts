@@ -1,8 +1,8 @@
 import { getStateValue } from './db';
 import http from 'http';
 import https from 'https';
-import { web } from './slackClient';
-import { SlackMessage, SlackSelf } from './types';
+import { web, userWeb } from './slackClient';
+import { SlackMessage, SlackMessageEvent, SlackSelf } from './types';
 
 // Slack user type — just the fields we actually use
 interface SlackUser {
@@ -129,3 +129,34 @@ export function extractImgUrl(text: string | undefined | null): string | null {
   console.log({ text, urls });
   return urls ? urls[0].replace(/<|>/g, '') : null;
 }
+
+/**
+ * Fetch the conversation leading up to `event`, oldest first, excluding the
+ * triggering message. In a thread, the thread replies ARE the conversation —
+ * not the channel's messages. Uses the user token because the bot token lacks
+ * the *:history scopes.
+ */
+export const fetchConversationHistory = async (
+  event: SlackMessageEvent,
+  limit: number
+): Promise<SlackMessage[]> => {
+  if (event.thread_ts) {
+    const result = await userWeb.conversations.replies({
+      channel: event.channel,
+      ts: event.thread_ts,
+      limit,
+    });
+    // replies come oldest-first and include the triggering message
+    return ((result.messages || []) as SlackMessage[]).filter(
+      (m) => m.text && m.ts !== event.ts
+    );
+  }
+  const result = await userWeb.conversations.history({
+    channel: event.channel,
+    limit,
+    latest: event.ts,
+  });
+  return ((result.messages || []) as SlackMessage[])
+    .filter((m) => m.text)
+    .reverse();
+};

@@ -1,16 +1,17 @@
 import OpenAI from 'openai';
-import { web, userWeb } from './slackClient';
+import { web } from './slackClient';
 import {
   getUserNameHash,
   resolveUserMentions,
   formatTranscript,
   isJeremyMessage,
   markdownToSlack,
+  fetchConversationHistory,
 } from './util';
 import { getSelf } from './self';
 import { addReactionOnce } from './reactionUtils';
 import * as people from './people';
-import { SlackMessage, SlackMessageEvent } from './types';
+import { SlackMessageEvent } from './types';
 
 const HISTORY_LIMIT = 50;
 
@@ -27,30 +28,7 @@ const getChatbot = async (
     const userHash = await getUserNameHash();
     const self = getSelf();
 
-    // Fetch real history from Slack API (user token — bot token lacks the
-    // *:history scopes, same reason sanityCheck uses userWeb). In a thread,
-    // the thread replies ARE the conversation — not the channel's messages.
-    let channelHistory: SlackMessage[];
-    if (event.thread_ts) {
-      const result = await userWeb.conversations.replies({
-        channel: event.channel,
-        ts: event.thread_ts,
-        limit: HISTORY_LIMIT,
-      });
-      // replies come oldest-first and include the triggering message
-      channelHistory = ((result.messages || []) as SlackMessage[]).filter(
-        (m) => m.text && m.ts !== event.ts
-      );
-    } else {
-      const result = await userWeb.conversations.history({
-        channel: event.channel,
-        limit: HISTORY_LIMIT,
-        latest: event.ts,
-      });
-      channelHistory = ((result.messages || []) as SlackMessage[])
-        .filter((m) => m.text)
-        .reverse();
-    }
+    const channelHistory = await fetchConversationHistory(event, HISTORY_LIMIT);
 
     const formattedHistory = formatTranscript(channelHistory, userHash, self);
 

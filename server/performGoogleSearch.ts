@@ -8,20 +8,32 @@ const customSearchId = process.env.GOOGLE_SEARCH_ID;
 
 const search = customsearch('v1');
 
-const isReachable = async (url: string): Promise<boolean> => {
+const REACHABILITY_TIMEOUT_MS = 5_000;
+
+const headRequest = async (url: string): Promise<Response | null> => {
   try {
-    const res = await fetch(url, {
+    return await fetch(url, {
       method: 'HEAD',
       redirect: 'follow',
-      signal: AbortSignal.timeout(5_000),
+      signal: AbortSignal.timeout(REACHABILITY_TIMEOUT_MS),
     });
-    return res.ok;
   } catch {
-    return false;
+    return null;
   }
 };
 
-const getSearchImage = async (
+const isReachable = async (url: string): Promise<boolean> =>
+  Boolean((await headRequest(url))?.ok);
+
+/** True if the URL loads and serves an image (so Slack will unfurl it inline). */
+export const isImageUrl = async (url: string): Promise<boolean> => {
+  const res = await headRequest(url);
+  return Boolean(
+    res?.ok && res.headers.get('content-type')?.startsWith('image/')
+  );
+};
+
+export const getSearchImage = async (
   query: string,
   atWork: boolean
 ): Promise<string | null> => {

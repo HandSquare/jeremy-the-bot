@@ -19,6 +19,7 @@ import getDallEImage from './getDallEImage';
 import getImageEdit from './getImageEdit';
 import getVideo from './getVideo';
 import getChatbot from './getChatbot';
+import { performGptImageSearch } from './findImageWithGpt';
 import {
   performGoogleImageSearch,
   performGoogleTextSearch,
@@ -182,7 +183,7 @@ const COMMANDS: Command[] = [
       await addReactionOnce(event.channel, event.ts, 'eyes');
       await addReactionOnce(event.channel, event.ts, 'game_die');
       const idx = Math.random() > 0.5 ? 1 : 2;
-      performGoogleImageSearch(event, m[idx]);
+      performGptImageSearch(event, m[idx]);
     },
   },
   {
@@ -190,7 +191,7 @@ const COMMANDS: Command[] = [
     match: (event) => event.text.match(/, pull up (.*)/),
     handle: async (event, m) => {
       await addReactionOnce(event.channel, event.ts, 'eyes');
-      performGoogleImageSearch(event, m[1]);
+      performGptImageSearch(event, m[1]);
     },
   },
   {
@@ -297,7 +298,7 @@ const COMMANDS: Command[] = [
       const lastMessage = await findLastTextMessage(event);
       if (!lastMessage) return;
       await addReactionOnce(event.channel, event.ts, 'eyes');
-      performGoogleImageSearch(event, lastMessage.text!);
+      performGptImageSearch(event, lastMessage.text!);
     },
   },
   {
