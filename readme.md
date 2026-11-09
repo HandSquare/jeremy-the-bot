@@ -32,13 +32,18 @@ Define aliases that get substituted into image prompts and injected into chat co
 - `, who is Nick` — read the description back.
 - `, forget Nick` — delete.
 
-When a known alias appears in a `, generate` / `, edit` prompt, Jeremy prepends a `CHARACTERS:` preamble so the image model has an explicit cast list:
+When a known alias appears in a `, generate` / `, edit` prompt, Jeremy prepends an explicit cast list and keeps the original scene request:
 
 ```
-CHARACTERS: Nick = a half-chinese artsy web developer, Bob = a tall musician.
+Requested cast (each entry is one distinct character):
+- Nick: a half-chinese artsy web developer
+- Bob: a tall musician
 
+Scene request:
 Nick and Bob having dinner.
 ```
+
+Names mentioned inside definitions are included as supporting context, rather than additional cast members. References are followed through nested definitions, with each definition included once even when references form a loop.
 
 The dictionary is also injected as system context for the chatbot, so Jeremy can reference people naturally in conversation.
 
