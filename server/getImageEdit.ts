@@ -4,7 +4,7 @@ import { web } from './slackClient';
 import generateSlug from './generateSlug';
 import { SlackMessageEvent, SlackFile, SlackMessage } from './types';
 import { getMessageImageSources, MessageImageSource } from './imageSources';
-import { GIF_REQUEST_PARAMS, toGifPrompt } from './gif';
+import { GIF_REQUEST_PARAMS } from './gif';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -77,7 +77,7 @@ const getImageEdit = async (
       openai.images.edit({
         model: 'gpt-image-2.6-sunburst',
         image: images.length === 1 ? images[0] : (images as any),
-        prompt: gif ? toGifPrompt(prompt) : prompt,
+        prompt: prompt,
         n: 1,
         size: 'auto',
         quality: 'medium',
