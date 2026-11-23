@@ -2,13 +2,15 @@ import OpenAI from 'openai';
 import { web } from './slackClient';
 import generateSlug from './generateSlug';
 import { SlackMessageEvent } from './types';
+import { GIF_REQUEST_PARAMS, toGifPrompt } from './gif';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const getDallEImage = async (
   event: SlackMessageEvent,
   query: string,
-  slugInput: string = query
+  slugInput: string = query,
+  { gif = false }: { gif?: boolean } = {}
 ): Promise<void> => {
   await web.reactions.add({
     channel: event.channel,
@@ -19,12 +21,13 @@ const getDallEImage = async (
     const [response, slug] = await Promise.all([
       openai.images.generate({
         model: 'gpt-image-2.6-sunburst',
-        prompt: query,
+        prompt: gif ? toGifPrompt(query) : query,
         n: 1,
         // 'auto' lets the model pick square/portrait/landscape from the prompt
         // (e.g. poster -> 1024x1536, album art -> 1024x1024, landscape photo -> 1536x1024)
         size: 'auto',
         quality: 'medium',
+        ...(gif ? (GIF_REQUEST_PARAMS as any) : {}),
       }),
       generateSlug(slugInput),
     ]);
@@ -35,7 +38,7 @@ const getDallEImage = async (
     const uploadArgs = {
       channel_id: event.channel,
       file: data,
-      filename: `${slug}.png`,
+      filename: `${slug}.${gif ? 'gif' : 'png'}`,
     } as any;
     if (event.thread_ts) uploadArgs.thread_ts = event.thread_ts;
     await web.filesUploadV2(uploadArgs);

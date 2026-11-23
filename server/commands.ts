@@ -195,6 +195,44 @@ const COMMANDS: Command[] = [
     },
   },
   {
+    // Animate the last image; fall back to GIF-ing the last text message.
+    name: 'gif-that',
+    match: (event) =>
+      event.text.toLowerCase().includes(', gif that') ? true : null,
+    handle: async (event) => {
+      const imageMessage = await findLastImageMessage(event);
+      if (imageMessage) {
+        getImageEdit(
+          event,
+          imageMessage,
+          'animate this image',
+          imageMessage.text || 'animated gif',
+          { gif: true }
+        );
+        return;
+      }
+      const lastMessage = await findLastTextMessage(event);
+      if (!lastMessage) return;
+      getDallEImage(
+        event,
+        people.resolveImagePrompt(lastMessage.text!),
+        lastMessage.text!,
+        { gif: true }
+      );
+    },
+  },
+  {
+    name: 'gif',
+    match: (event) => event.text.match(/, gif (.*)/i),
+    handle: (event, m) => {
+      const original = m[1];
+      const prompt = people.resolveImagePrompt(original);
+      if (messageHasImage(event))
+        getImageEdit(event, event, prompt, original, { gif: true });
+      else getDallEImage(event, prompt, original, { gif: true });
+    },
+  },
+  {
     name: 'generate-that',
     match: (event) =>
       event.text.toLowerCase().includes(', generate that') ? true : null,

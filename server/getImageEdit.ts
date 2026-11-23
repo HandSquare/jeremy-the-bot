@@ -4,6 +4,7 @@ import { web } from './slackClient';
 import generateSlug from './generateSlug';
 import { SlackMessageEvent, SlackFile, SlackMessage } from './types';
 import { getMessageImageSources, MessageImageSource } from './imageSources';
+import { GIF_REQUEST_PARAMS, toGifPrompt } from './gif';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -48,7 +49,8 @@ const getImageEdit = async (
   event: SlackMessageEvent,
   sourceMessage: SlackMessageEvent | SlackMessage,
   prompt: string,
-  slugInput: string = prompt
+  slugInput: string = prompt,
+  { gif = false }: { gif?: boolean } = {}
 ): Promise<void> => {
   await web.reactions.add({
     channel: event.channel,
@@ -75,10 +77,11 @@ const getImageEdit = async (
       openai.images.edit({
         model: 'gpt-image-2.6-sunburst',
         image: images.length === 1 ? images[0] : (images as any),
-        prompt: prompt,
+        prompt: gif ? toGifPrompt(prompt) : prompt,
         n: 1,
         size: 'auto',
         quality: 'medium',
+        ...(gif ? (GIF_REQUEST_PARAMS as any) : {}),
       }),
       generateSlug(slugInput),
     ]);
@@ -86,10 +89,14 @@ const getImageEdit = async (
     const base64Data = response.data![0].b64_json!;
     const data = Buffer.from(base64Data, 'base64');
 
+    // Intentionally no thread_ts: edits posted from a thread land in the main
+    // channel. It's a bug we kept as a feature — random images showing up in
+    // the channel is funny. (We really wanted "also send to channel", but
+    // filesUploadV2 doesn't support reply_broadcast.)
     await web.filesUploadV2({
       channel_id: event.channel,
       file: data,
-      filename: `${slug}.png`,
+      filename: `${slug}.${gif ? 'gif' : 'png'}`,
     });
   } catch (e: any) {
     console.log('err', e);
